@@ -80,15 +80,15 @@ bot.on("message", async (msg) => {
 
         bot.sendPhoto(chatId, placeholderImage).then(async (sentMessage) => {
           try {
-            const result = await openai.images.create(
-              (prompt = text),
-              (n = 1),
-              (size = "512x512")
-            );
+            const response = await openai.createImage({
+              prompt: "a white siamese cat",
+              n: 1,
+              size: "1024x1024",
+            });
 
             await delay(5000); // add a delay of 5 seconds before sending the actual image
             await bot.deleteMessage(chatId, sentMessage.message_id);
-            await bot.sendPhoto(chatId, result["data"][0]["url"]);
+            await bot.sendPhoto(chatId, response.data.data[0].url);
           } catch (error) {
             bot.sendMessage(
               chatId,
