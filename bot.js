@@ -6,7 +6,7 @@ const botToken = process.env.botToken;
 const openAiToken = process.env.openAiToken;
 
 const config = new Configuration({
-  apiKey: openaiToken,
+  apiKey: openAiToken,
 });
 
 const openai = new OpenAIApi(config);
