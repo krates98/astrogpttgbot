@@ -1,3 +1,32 @@
+const express = require("express");
+const app = express();
+
+const TelegramBot = require("node-telegram-bot-api");
+const { Configuration, OpenAIApi } = require("openai");
+
+const botToken = process.env.botToken;
+const openAiToken = process.env.openAiToken;
+const port = process.env.PORT || 3000; // Use the port provided by Heroku or use 3000 as a default
+
+const config = new Configuration({
+  apiKey: openAiToken,
+});
+
+const openai = new OpenAIApi(config);
+
+const bot = new TelegramBot(botToken, { polling: true });
+
+const placeholderImage =
+  "https://via.placeholder.com/512x512.png?text=Generating+image%2C+please+wait...";
+
+let conversationStarted = false; // flag to keep track of whether the conversation has started or not
+let userRepliesCount = new Map(); // map to keep track of user's reply count
+
+bot.onText(/\/start/, (msg) => {
+  bot.sendMessage(msg.chat.id, "Welcome to Telegram ChatBot");
+  conversationStarted = true; // set the flag to true when the user sends the "/start" command
+});
+
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
 
