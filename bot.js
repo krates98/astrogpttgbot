@@ -114,12 +114,12 @@ bot.on("message", async (msg) => {
 
     bot.on("message", async (msg) => {
       if (
-        msg.text != "/help" ||
-        msg.text != "/generate" ||
-        msg.text != "/menu" ||
-        msg.text != "/start" ||
-        msg.text != "/website" ||
-        msg.text != "/chat"
+        msg.text != /\/help/ ||
+        msg.text != /\/generate/ ||
+        msg.text != /\/menu/ ||
+        msg.text != /\/start/ ||
+        msg.text != /\/website/ ||
+        msg.text != /\/chat/
       ) {
         const reply = await openai.createCompletion({
           max_tokens: 100,
