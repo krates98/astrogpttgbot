@@ -111,8 +111,16 @@ bot.on("message", async (msg) => {
 
   if (msg.text === "/chat") {
     bot.sendMessage(chatId, "Please enter a message:");
+
     bot.on("message", async (msg) => {
-      if (msg.text) {
+      if (
+        msg.text != "/help" ||
+        msg.text != "/generate" ||
+        msg.text != "/menu" ||
+        msg.text != "/start" ||
+        msg.text != "/website" ||
+        msg.text != "/chat"
+      ) {
         const reply = await openai.createCompletion({
           max_tokens: 100,
           model: "text-curie-001",
