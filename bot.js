@@ -3,7 +3,6 @@ const app = express();
 
 const TelegramBot = require("node-telegram-bot-api");
 const { Configuration, OpenAIApi } = require("openai");
-const axios = require("axios");
 
 const botToken = process.env.botToken;
 const openAiToken = process.env.openAiToken;
@@ -25,17 +24,6 @@ bot.onText(/\/start/, (msg) => {
   conversationStarted = true; // set the flag to true when the user sends the "/start" command
 });
 
-bot.onText(/\/generate/, (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    "Please enter a prompt to generate a DALL-E image:"
-  );
-});
-
-bot.onText(/\/chat/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Please enter your message:");
-});
-
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
 
@@ -45,21 +33,6 @@ bot.on("message", async (msg) => {
       "Please start the conversation by sending the /start command"
     );
     return;
-  }
-
-  // Check if user's reply limit is reached
-  const user = msg.from.id;
-  if (!userRepliesCount.has(user)) {
-    userRepliesCount.set(user, 1);
-  } else {
-    if (userRepliesCount.get(user) >= 5) {
-      bot.sendMessage(
-        chatId,
-        "Sorry, you have exceeded your daily reply limit."
-      );
-      return;
-    }
-    userRepliesCount.set(user, userRepliesCount.get(user) + 1);
   }
 
   if (msg.text === "/help") {
@@ -73,8 +46,8 @@ bot.on("message", async (msg) => {
       "💁🏻 /help - Get help\n" +
       "🥪 /menu - Show menu\n" +
       "🌐 /website - Get website URL\n" +
-      "🖼 /generate - Generate a DALL-E image\n" +
-      "💬 /chat - Start a regular chat\n";
+      "🎨 /generate - Generate image using text\n" +
+      "💬 /chat - Start a chat";
 
     const options = {
       reply_markup: {
@@ -97,81 +70,106 @@ bot.on("message", async (msg) => {
   }
 
   if (msg.text === "/generate") {
-    return; // We already prompted the user to enter a DALL-E prompt
+    bot.sendMessage(chatId, "Please enter some text to generate an image:");
+
+    bot.on("message", async (msg) => {
+      if (msg.text) {
+        const text = msg.text;
+
+        bot.sendMessage(chatId, "Generating image, please wait...");
+
+        try {
+          const result = await openai.images.create({
+            model: "image-alpha-001",
+            prompt: `generate image using text "${text}"`,
+            size: "512x512",
+          });
+
+          bot.sendPhoto(chatId, result.data.url);
+        } catch (error) {
+          bot.sendMessage(
+            chatId,
+            "An error occurred while generating the image"
+          );
+          console.log(error);
+        }
+      }
+    });
+
+    return;
   }
 
   if (msg.text === "/chat") {
-    return; // We already prompted the user to enter a chat message
-  }
+    bot.sendMessage(
+      chatId,
+      "Please write something to get a response. Type /menu to go back to the main menu."
+    );
 
-  if (msg.photo) {
-    bot.sendMessage(chatId, "Thanks for the photo!");
+    bot.on("message", async (msg) => {
+      if (msg.text) {
+        const reply = await openai.createCompletion({
+          max_tokens: 100,
+          model: "text-curie-001",
+          prompt: msg.text + " (please keep your answer within 100 words)",
+          temperature: 0,
+        });
+
+        // Send typing action to indicate that the bot is typing
+        bot.sendChatAction(chatId, "typing");
+
+        // Delay the response by 2 seconds to simulate "typing" time
+        setTimeout(() => {
+          bot.sendMessage(chatId, reply.data.choices[0].text);
+        }, 2000);
+      }
+    });
+
     return;
   }
-
-  // If none of the message commands match, send a response using OpenAI
-  const reply = await openai.createCompletion({
-    max_tokens: 100,
-    model: "text-curie-001",
-    prompt: msg.text + " (please keep your answer within 100 words)",
-    temperature: 0,
-  });
-
-  // Send typing action to indicate that the bot is typing
-  bot.sendChatAction(chatId, "typing");
-
-  // Delay the response by 2 seconds to simulate "typing" time
-  setTimeout(() => {
-    bot.sendMessage(chatId, reply.data.choices[0].text);
-  }, 2000);
-});
-
-bot.onText(/\/generate/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Please enter a text to generate an image");
-});
-
-bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
 
   if (msg.text === "/generate") {
-    bot.sendMessage(chatId, "Please enter a text to generate an image");
-    return;
-  }
+    bot.sendMessage(chatId, "Please enter a description to generate an image:");
 
-  if (msg.photo) {
-    bot.sendMessage(chatId, "Thanks for the photo!");
-    return;
-  }
+    bot.on("message", async (msg) => {
+      if (msg.text) {
+        const text = msg.text;
 
-  if (
-    msg.reply_to_message &&
-    msg.reply_to_message.text === "Please enter a text to generate an image"
-  ) {
-    try {
-      const response = await axios.post(
-        "https://api.openai.com/v1/images/generations",
-        {
-          model: "image-alpha-001",
-          prompt: msg.text,
-          api_key: openAiToken,
-          num_images: 1,
-          size: "256x256",
+        bot.sendMessage(chatId, "Generating image, please wait...");
+
+        try {
+          const result = await openai.images.create({
+            model: "image-alpha-001",
+            prompt: `generate image using text "${text}"`,
+            size: "512x512",
+          });
+
+          bot.sendPhoto(chatId, result.data.url);
+        } catch (error) {
+          bot.sendMessage(
+            chatId,
+            "An error occurred while generating the image"
+          );
+          console.log(error);
         }
-      );
+      }
+    });
 
-      const { data } = response;
-      const { data: imageData } = data;
-
-      bot.sendChatAction(chatId, "upload_photo");
-
-      setTimeout(() => {
-        bot.sendPhoto(chatId, imageData[0].url);
-      }, 2000);
-    } catch (error) {
-      bot.sendMessage(chatId, "An error occurred while generating the image");
-      console.log(error);
-    }
     return;
+  }
+
+  // Check if user's reply limit is reached
+  const user = msg.from.id;
+  if (!userRepliesCount.has(user)) {
+    userRepliesCount.set(user, 1);
+  } else {
+    if (userRepliesCount.get(user) >= 5) {
+      bot.sendMessage(
+        chatId,
+        "Sorry, you have exceeded your daily reply limit."
+      );
+      return;
+    }
+    userRepliesCount.set(user, userRepliesCount.get(user) + 1);
   }
 
   // If none of the message commands match, send a response using OpenAI
