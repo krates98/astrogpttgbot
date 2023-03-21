@@ -98,23 +98,6 @@ bot.on("message", async (msg) => {
     return;
   }
 
-  if (msg.text === "/chat") {
-    bot.sendMessage(chatId, "Please enter a message:");
-    bot.on("message", async (msg) => {
-      if (msg.text) {
-        const reply = await openai.createCompletion({
-          max_tokens: 100,
-          model: "text-curie-001",
-          prompt: msg.text + " (please keep your answer within 100 words)",
-          temperature: 0,
-        });
-
-        bot.sendMessage(chatId, reply.data.choices[0].text);
-      }
-    });
-    return;
-  }
-
   let isGeneratingImage = false;
 
   bot.on("message", async (msg) => {
