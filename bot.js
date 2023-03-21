@@ -68,19 +68,22 @@ bot.on("message", async (msg) => {
     return;
   }
 
-  if (msg.text === "/generate") {
-    bot.sendMessage(chatId, "Please enter a short description of the image:");
+  let isGeneratingImage = false;
 
-    bot.once("message", async (msg) => {
-      if (msg.text) {
-        const description = msg.text;
+  if (msg.text === "/generate") {
+    bot.sendMessage(chatId, "Please enter some text to generate an image:");
+    isGeneratingImage = true;
+
+    bot.on("message", async (msg) => {
+      if (isGeneratingImage && msg.text) {
+        const text = msg.text;
 
         bot.sendMessage(chatId, "Generating image, please wait...");
 
         try {
           const result = await openai.images.create({
             model: "image-alpha-001",
-            prompt: `generate image using text "${description}"`,
+            prompt: `generate image using text "${text}"`,
             size: "512x512",
           });
 
@@ -92,9 +95,28 @@ bot.on("message", async (msg) => {
           );
           console.log(error);
         }
+
+        isGeneratingImage = false;
       }
     });
 
+    return;
+  }
+
+  if (msg.text === "/chat") {
+    bot.sendMessage(chatId, "Please enter a message:");
+    bot.on("message", async (msg) => {
+      if (msg.text) {
+        const reply = await openai.createCompletion({
+          max_tokens: 100,
+          model: "text-curie-001",
+          prompt: msg.text + " (please keep your answer within 100 words)",
+          temperature: 0,
+        });
+
+        bot.sendMessage(chatId, reply.data.choices[0].text);
+      }
+    });
     return;
   }
 
