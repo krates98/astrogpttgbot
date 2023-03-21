@@ -1,0 +1,23 @@
+{
+  "name": "telaigptbot",
+  "version": "1.0.0",
+  "description": "A telegram chat bot which uses Open Ai to deliver results",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app"
+  },
+  "keywords": [
+    "openai",
+    "chatgpt",
+    "telegram",
+    "bot"
+  ],
+  "author": "krates",
+  "license": "MIT",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.61.0",
+    "nodemon": "^2.0.21",
+    "openai": "^3.2.1"
+  }
+}
