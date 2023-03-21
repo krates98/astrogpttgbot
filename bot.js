@@ -81,11 +81,6 @@ app.get("/", (req, res) => {
   res.send("Telegram ChatBot is running");
 });
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Telegram ChatBot is listening");
+app.listen(port, () => {
+  console.log(`Telegram ChatBot is listening on port ${port}`);
 });
-
-// Start the bot listening for incoming messages
-bot
-  .on("polling_error", (error) => console.log(error))
-  .listen(port, () => console.log(`Bot is listening on port ${port}`));
