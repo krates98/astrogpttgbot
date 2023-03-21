@@ -67,6 +67,7 @@ bot.on("message", async (msg) => {
   }
 
   // If none of the message commands match, send a response using OpenAI
+  bot.sendChatAction(chatId, "typing"); // show typing status
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
