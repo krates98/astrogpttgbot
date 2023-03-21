@@ -115,30 +115,39 @@ bot.on("message", async (msg) => {
     return;
   }
 
-  if (msg.text === "/generate") {
-    bot.sendMessage(chatId, "Please enter some text to generate an image:");
-    bot.on("message", async (msg) => {
-      if (msg.text) {
-        const text = msg.text;
+  let isGeneratingImage = false;
 
-        bot.sendMessage(chatId, "Generating image, please wait...");
+  bot.on("message", async (msg) => {
+    const chatId = msg.chat.id;
 
-        try {
-          const result = await openai.images.create({
-            model: "image-alpha-001",
-            prompt: `generate image using text "${text}"`,
-            size: "512x512",
-          });
+    if (isGeneratingImage && msg.text) {
+      const text = msg.text;
 
-          bot.sendPhoto(chatId, result.data.url);
-        } catch (error) {
-          bot.sendMessage(
-            chatId,
-            "An error occurred while generating the image"
-          );
-          console.log(error);
-        }
+      bot.sendMessage(chatId, "Generating image, please wait...");
+
+      try {
+        const result = await openai.images.create({
+          model: "image-alpha-001",
+          prompt: `generate image using text "${text}"`,
+          size: "512x512",
+        });
+
+        bot.sendPhoto(chatId, result.data.url);
+      } catch (error) {
+        bot.sendMessage(chatId, "An error occurred while generating the image");
+        console.log(error);
       }
+
+      isGeneratingImage = false;
+    }
+  });
+
+  if (msg.text === "/generate") {
+    bot.onText(/\/generate/, (msg) => {
+      const chatId = msg.chat.id;
+
+      bot.sendMessage(chatId, "Please enter some text to generate an image:");
+      isGeneratingImage = true;
     });
 
     return;
