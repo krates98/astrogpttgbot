@@ -4,8 +4,8 @@
   "description": "A telegram chat bot which uses Open Ai to deliver results",
   "main": "bot.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app"
+    "start": "node bot.js",
+    "dev": "nodemon bot"
   },
   "keywords": [
     "openai",
