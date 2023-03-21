@@ -108,7 +108,7 @@ bot.on("message", async (msg) => {
   if (msg.text === "/chat") {
     bot.sendMessage(chatId, "Please enter a message:");
 
-    bot.on("message", async (msg) => {
+    const chatListener = async (msg) => {
       console.log(msg.text);
       if (
         msg.text != "/help" ||
@@ -127,7 +127,24 @@ bot.on("message", async (msg) => {
 
         bot.sendMessage(chatId, reply.data.choices[0].text);
       }
+    };
+
+    bot.on("message", chatListener);
+
+    bot.once("message", (msg) => {
+      if (
+        msg.text === "/help" ||
+        msg.text === "/generate" ||
+        msg.text === "/menu" ||
+        msg.text === "/start" ||
+        msg.text === "/website" ||
+        msg.text === "/chat"
+      ) {
+        bot.sendMessage(chatId, "Ending chat...");
+        bot.removeListener("message", chatListener);
+      }
     });
+
     return;
   }
 
