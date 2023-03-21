@@ -2,7 +2,6 @@ const express = require("express");
 const app = express();
 
 const TelegramBot = require("node-telegram-bot-api");
-
 const { Configuration, OpenAIApi } = require("openai");
 
 const botToken = process.env.botToken;
@@ -18,6 +17,7 @@ const openai = new OpenAIApi(config);
 const bot = new TelegramBot(botToken, { polling: true });
 
 let conversationStarted = false; // flag to keep track of whether the conversation has started or not
+let userRepliesCount = new Map(); // map to keep track of user's reply count
 
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, "Welcome to Telegram ChatBot");
@@ -42,10 +42,10 @@ bot.on("message", async (msg) => {
 
   if (msg.text === "/menu") {
     const message =
-      "Please choose an action:\n\n" +
-      "/help - Get help\n" +
-      "/menu - Show menu\n" +
-      "/website - Get website URL\n";
+      "🃏 Please choose an action:\n\n" +
+      "💁🏻 /help - Get help\n" +
+      "🥪 /menu - Show menu\n" +
+      "🌐 /website - Get website URL\n";
 
     const options = {
       reply_markup: {
@@ -66,8 +66,22 @@ bot.on("message", async (msg) => {
     return;
   }
 
+  // Check if user's reply limit is reached
+  const user = msg.from.id;
+  if (!userRepliesCount.has(user)) {
+    userRepliesCount.set(user, 1);
+  } else {
+    if (userRepliesCount.get(user) >= 5) {
+      bot.sendMessage(
+        chatId,
+        "Sorry, you have exceeded your daily reply limit."
+      );
+      return;
+    }
+    userRepliesCount.set(user, userRepliesCount.get(user) + 1);
+  }
+
   // If none of the message commands match, send a response using OpenAI
-  bot.sendChatAction(chatId, "typing"); // show typing status
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
@@ -75,13 +89,19 @@ bot.on("message", async (msg) => {
     temperature: 0,
   });
 
-  bot.sendMessage(chatId, reply.data.choices[0].text);
+  // Send typing action to indicate that the bot is typing
+  bot.sendChatAction(chatId, "typing");
+
+  // Delay the response by 2 seconds to simulate "typing" time
+  setTimeout(() => {
+    bot.sendMessage(chatId, reply.data.choices[0].text);
+  }, 2000);
 });
 
 app.get("/", (req, res) => {
   res.send("Telegram ChatBot is running");
 });
 
-app.listen(port, () => {
-  console.log(`Telegram ChatBot is listening on port ${port}`);
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Telegram ChatBot is listening");
 });
