@@ -45,13 +45,15 @@ bot.on("message", async (msg) => {
       "🃏 Please choose an action:\n\n" +
       "💁🏻 /help - Get help\n" +
       "🥪 /menu - Show menu\n" +
-      "🌐 /website - Get website URL\n";
+      "🌐 /website - Get website URL\n" +
+      "🌐 /generate - Generate image\n";
 
     const options = {
       reply_markup: {
         keyboard: [
           [{ text: "/help" }, { text: "/menu" }],
           [{ text: "/website" }],
+          { text: "/generate" },
         ],
         resize_keyboard: true,
       },
@@ -63,6 +65,20 @@ bot.on("message", async (msg) => {
 
   if (msg.text === "/website") {
     bot.sendMessage(chatId, "https://www.google.com");
+    return;
+  }
+
+  if (msg.text === "/generate") {
+    bot.sendMessage(chatId, "Please wait while I generate your image...");
+
+    try {
+      const image = await generateImage();
+      bot.sendPhoto(chatId, image);
+    } catch (error) {
+      bot.sendMessage(chatId, "An error occurred while generating the image");
+      console.log(error);
+    }
+
     return;
   }
 
