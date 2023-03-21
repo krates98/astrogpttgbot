@@ -109,6 +109,7 @@ bot.on("message", async (msg) => {
     bot.sendMessage(chatId, "Please enter a message:");
 
     bot.on("message", async (msg) => {
+      console.log(msg.text);
       if (
         msg.text != "/help" ||
         msg.text != "/generate" ||
