@@ -27,11 +27,26 @@ bot.onText(/\/start/, (msg) => {
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
 
+  const message =
+    "🃏 Please choose an action:\n\n" +
+    "💁🏻 /help - Get help\n" +
+    "🥪 /menu - Show menu\n" +
+    "🌐 /website - Get website URL\n" +
+    "🎨 /generate - Generate image using text\n" +
+    "💬 /chat - Start a chat with the bot";
+
+  const options = {
+    reply_markup: {
+      keyboard: [
+        [{ text: "/help" }, { text: "/menu" }],
+        [{ text: "/website" }, { text: "/generate" }, { text: "/chat" }],
+      ],
+      resize_keyboard: true,
+    },
+  };
+
   if (!conversationStarted) {
-    bot.sendMessage(
-      chatId,
-      "Please start the conversation by sending the /start command"
-    );
+    bot.sendMessage(chatId, message);
     return;
   }
 
@@ -41,30 +56,12 @@ bot.on("message", async (msg) => {
   }
 
   if (msg.text === "/menu") {
-    const message =
-      "🃏 Please choose an action:\n\n" +
-      "💁🏻 /help - Get help\n" +
-      "🥪 /menu - Show menu\n" +
-      "🌐 /website - Get website URL\n" +
-      "🎨 /generate - Generate image using text\n" +
-      "💬 /chat - Start a chat with the bot";
-
-    const options = {
-      reply_markup: {
-        keyboard: [
-          [{ text: "/help" }, { text: "/menu" }],
-          [{ text: "/website" }, { text: "/generate" }, { text: "/chat" }],
-        ],
-        resize_keyboard: true,
-      },
-    };
-
     bot.sendMessage(chatId, message, options);
     return;
   }
 
   if (msg.text === "/website") {
-    bot.sendMessage(chatId, "https://www.google.com");
+    bot.sendMessage(chatId, "https://www.telegramgpt.com");
     return;
   }
 
@@ -87,7 +84,7 @@ bot.on("message", async (msg) => {
             size: "512x512",
           });
 
-          bot.sendPhoto(chatId, result.data.url);
+          await bot.sendPhoto(chatId, result.data.url);
         } catch (error) {
           bot.sendMessage(
             chatId,
@@ -120,52 +117,16 @@ bot.on("message", async (msg) => {
     return;
   }
 
-  bot.on("message", async (msg) => {
-    const chatId = msg.chat.id;
-
-    if (isGeneratingImage && msg.text) {
-      const text = msg.text;
-
-      bot.sendMessage(chatId, "Generating image, please wait...");
-
-      try {
-        const result = await openai.images.create({
-          model: "image-alpha-001",
-          prompt: `generate image using text "${text}"`,
-          size: "512x512",
-        });
-
-        bot.sendPhoto(chatId, result.data.url);
-      } catch (error) {
-        bot.sendMessage(chatId, "An error occurred while generating the image");
-        console.log(error);
-      }
-
-      isGeneratingImage = false;
-    }
-  });
-
-  if (msg.text === "/generate") {
-    bot.onText(/\/generate/, (msg) => {
-      const chatId = msg.chat.id;
-
-      bot.sendMessage(chatId, "Please enter some text to generate an image:");
-      isGeneratingImage = true;
-    });
-
-    return;
-  }
-
-  bot.sendMessage(
-    chatId,
-    "Invalid command. Please choose a command from the menu."
-  );
+  // bot.sendMessage(
+  //   chatId,
+  //   "Please choose from the menu options dont randomly rable! " + message
+  // );
 });
 
 app.get("/", (req, res) => {
   res.send("Telegram ChatBot is running");
 });
 
-app.listen(process.env.PORT || 3000, () => {
+app.listen(port, () => {
   console.log("Telegram ChatBot is listening");
 });
