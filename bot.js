@@ -1,32 +1,3 @@
-const express = require("express");
-const app = express();
-
-const TelegramBot = require("node-telegram-bot-api");
-const { Configuration, OpenAIApi } = require("openai");
-
-const botToken = process.env.botToken;
-const openAiToken = process.env.openAiToken;
-const port = process.env.PORT || 3000; // Use the port provided by Heroku or use 3000 as a default
-
-const config = new Configuration({
-  apiKey: openAiToken,
-});
-
-const openai = new OpenAIApi(config);
-
-const bot = new TelegramBot(botToken, { polling: true });
-
-const placeholderImage =
-  "https://via.placeholder.com/512x512.png?text=Generating+image%2C+please+wait...";
-
-let conversationStarted = false; // flag to keep track of whether the conversation has started or not
-let userRepliesCount = new Map(); // map to keep track of user's reply count
-
-bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Welcome to Telegram ChatBot");
-  conversationStarted = true; // set the flag to true when the user sends the "/start" command
-});
-
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
 
@@ -69,13 +40,41 @@ bot.on("message", async (msg) => {
   }
 
   let isGeneratingImage = false;
+  let isChatting = false;
 
   if (msg.text === "/generate") {
     bot.sendMessage(chatId, "Please enter some text to generate an image:");
     isGeneratingImage = true;
+  }
 
-    bot.on("message", async (msg) => {
-      if (isGeneratingImage && msg.text) {
+  if (msg.text === "/chat") {
+    bot.sendMessage(chatId, "Please enter a message:");
+    isChatting = true;
+  }
+
+  const chatListener = async (msg) => {
+    if (
+      msg.text != "/help" &&
+      msg.text != "/generate" &&
+      msg.text != "/menu" &&
+      msg.text != "/start" &&
+      msg.text != "/website" &&
+      msg.text != "/chat"
+    ) {
+      const reply = await openai.createCompletion({
+        max_tokens: 100,
+        model: "text-curie-001",
+        prompt: msg.text + " (please keep your answer within 100 words)",
+        temperature: 0,
+      });
+
+      bot.sendMessage(chatId, reply.data.choices[0].text);
+    }
+  };
+
+  if (isGeneratingImage) {
+    bot.once("message", async (msg) => {
+      if (msg.text) {
         const text = msg.text;
 
         bot.sendPhoto(chatId, placeholderImage).then(async (sentMessage) => {
@@ -97,41 +96,14 @@ bot.on("message", async (msg) => {
             console.log(error);
           }
         });
-
-        isGeneratingImage = false;
       }
     });
-
-    return;
   }
 
-  if (msg.text === "/chat") {
-    bot.sendMessage(chatId, "Please enter a message:");
-
-    const chatListener = async (msg) => {
-      console.log(msg.text);
-      if (
-        msg.text != "/help" ||
-        msg.text != "/generate" ||
-        msg.text != "/menu" ||
-        msg.text != "/start" ||
-        msg.text != "/website" ||
-        msg.text != "/chat"
-      ) {
-        const reply = await openai.createCompletion({
-          max_tokens: 100,
-          model: "text-curie-001",
-          prompt: msg.text + " (please keep your answer within 100 words)",
-          temperature: 0,
-        });
-
-        bot.sendMessage(chatId, reply.data.choices[0].text);
-      }
-    };
-
+  if (isChatting) {
     bot.on("message", chatListener);
 
-    bot.once("message", (msg) => {
+    bot.once("message", async (msg) => {
       if (
         msg.text === "/help" ||
         msg.text === "/generate" ||
@@ -144,8 +116,6 @@ bot.on("message", async (msg) => {
         bot.removeListener("message", chatListener);
       }
     });
-
-    return;
   }
 
   // bot.sendMessage(
