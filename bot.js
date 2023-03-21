@@ -86,8 +86,9 @@ bot.on("message", async (msg) => {
               size: "512x512",
             });
 
-            await bot.deleteMessage(chatId, sentMessage.message_id); // remove the placeholder image
-            await bot.sendPhoto(chatId, result.data.url); // send the actual image
+            await delay(5000); // add a delay of 5 seconds before sending the actual image
+            await bot.deleteMessage(chatId, sentMessage.message_id);
+            await bot.sendPhoto(chatId, result.data.url);
           } catch (error) {
             bot.sendMessage(
               chatId,
@@ -96,6 +97,10 @@ bot.on("message", async (msg) => {
             console.log(error);
           }
         });
+
+        function delay(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
 
         isGeneratingImage = false;
       }
