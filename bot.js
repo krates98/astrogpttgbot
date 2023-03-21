@@ -53,8 +53,7 @@ bot.on("message", async (msg) => {
       reply_markup: {
         keyboard: [
           [{ text: "/help" }, { text: "/menu" }],
-          [{ text: "/website" }, { text: "/generate" }],
-          [{ text: "/chat" }],
+          [{ text: "/website" }, { text: "/generate" }, { text: "/chat" }],
         ],
         resize_keyboard: true,
       },
@@ -70,18 +69,18 @@ bot.on("message", async (msg) => {
   }
 
   if (msg.text === "/generate") {
-    bot.sendMessage(chatId, "Please enter a prompt to generate an image:");
+    bot.sendMessage(chatId, "Please enter a short description of the image:");
 
     bot.once("message", async (msg) => {
       if (msg.text) {
-        const prompt = msg.text;
+        const description = msg.text;
 
         bot.sendMessage(chatId, "Generating image, please wait...");
 
         try {
           const result = await openai.images.create({
             model: "image-alpha-001",
-            prompt: prompt,
+            prompt: `generate image using text "${description}"`,
             size: "512x512",
           });
 
@@ -98,11 +97,11 @@ bot.on("message", async (msg) => {
 
     return;
   }
+
   if (msg.text === "/chat") {
     bot.sendMessage(chatId, "Please enter a message:");
     bot.on("message", async (msg) => {
       if (msg.text) {
-        // If none of the message commands match, send a response using OpenAI
         const reply = await openai.createCompletion({
           max_tokens: 100,
           model: "text-curie-001",
@@ -110,20 +109,14 @@ bot.on("message", async (msg) => {
           temperature: 0,
         });
 
-        // Send typing action to indicate that the bot is typing
-        bot.sendChatAction(chatId, "typing");
-
-        // Delay the response by 2 seconds to simulate "typing" time
-        setTimeout(() => {
-          bot.sendMessage(chatId, reply.data.choices[0].text);
-        }, 2000);
+        bot.sendMessage(chatId, reply.data.choices[0].text);
       }
     });
     return;
   }
 
   if (msg.text === "/generate") {
-    bot.sendMessage(chatId, "Please enter a description of the image:");
+    bot.sendMessage(chatId, "Please enter some text to generate an image:");
     bot.on("message", async (msg) => {
       if (msg.text) {
         const text = msg.text;
@@ -147,39 +140,22 @@ bot.on("message", async (msg) => {
         }
       }
     });
+
     return;
   }
 
-  // Check if user's reply limit is reached
-  const user = msg.from.id;
-  if (!userRepliesCount.has(user)) {
-    userRepliesCount.set(user, 1);
-  } else {
-    if (userRepliesCount.get(user) >= 5) {
-      bot.sendMessage(
-        chatId,
-        "Sorry, you have exceeded your daily reply limit."
-      );
-      return;
-    }
-    userRepliesCount.set(user, userRepliesCount.get(user) + 1);
-  }
+  bot.sendMessage(
+    chatId,
+    "Invalid command. Please choose a command from the menu."
+  );
+});
 
-  // If none of the message commands match, send a response using OpenAI
-  const reply = await openai.createCompletion({
-    max_tokens: 100,
-    model: "text-curie-001",
-    prompt: msg.text + " (please keep your answer within 100 words)",
-    temperature: 0,
-  });
+app.get("/", (req, res) => {
+  res.send("Telegram ChatBot is running");
+});
 
-  // Send typing action to indicate that the bot is typing
-  bot.sendChatAction(chatId, "typing");
-
-  // Delay the response by 2 seconds to simulate "typing" time
-  setTimeout(() => {
-    bot.sendMessage(chatId, reply.data.choices[0].text);
-  }, 2000);
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Telegram ChatBot is listening");
 });
 
 app.get("/", (req, res) => {
