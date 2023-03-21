@@ -120,8 +120,6 @@ bot.on("message", async (msg) => {
     return;
   }
 
-  let isGeneratingImage = false;
-
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
 
