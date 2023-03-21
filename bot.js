@@ -39,19 +39,44 @@ bot.onText(/\/start/, (msg) => {
 
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
+  const messageText = msg.text;
 
-  if (!conversationStarted) {
-    bot.sendMessage(
-      chatId,
-      "Please start the conversation by sending the /start command"
-    );
+  if (messageText === "/help") {
+    bot.sendMessage(chatId, "This is a help message.");
     return;
   }
 
+  if (messageText === "/menu") {
+    const message =
+      "Please choose an action:\n\n" +
+      "/help - Get help\n" +
+      "/menu - Show menu\n" +
+      "/website - Get website URL\n";
+
+    const options = {
+      reply_markup: {
+        keyboard: [
+          [{ text: "/help" }, { text: "/menu" }],
+          [{ text: "/website" }],
+        ],
+        resize_keyboard: true,
+      },
+    };
+
+    bot.sendMessage(chatId, message, options);
+    return;
+  }
+
+  if (messageText === "/website") {
+    bot.sendMessage(chatId, "https://www.google.com");
+    return;
+  }
+
+  // If none of the message commands match, send a response using OpenAI
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
-    prompt: msg.text + " (please keep your answer within 100 words)",
+    prompt: messageText + " (please keep your answer within 100 words)",
     temperature: 0,
   });
 
