@@ -16,7 +16,24 @@ const bot = new TelegramBot(botToken, { polling: true });
 let conversationStarted = false; // flag to keep track of whether the conversation has started or not
 
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Welcome to Telegram ChatBot");
+  const chatId = msg.chat.id;
+  const message =
+    "Welcome to Telegram ChatBot. Please choose an action:\n\n" +
+    "/help - Get help\n" +
+    "/menu - Show menu\n" +
+    "/website - Get website URL\n";
+
+  const options = {
+    reply_markup: {
+      keyboard: [
+        [{ text: "/help" }, { text: "/menu" }],
+        [{ text: "/website" }],
+      ],
+      resize_keyboard: true,
+    },
+  };
+
+  bot.sendMessage(chatId, message, options);
   conversationStarted = true; // set the flag to true when the user sends the "/start" command
 });
 
