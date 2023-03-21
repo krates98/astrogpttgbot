@@ -1,3 +1,6 @@
+const express = require("express");
+const app = express();
+
 const TelegramBot = require("node-telegram-bot-api");
 
 const { Configuration, OpenAIApi } = require("openai");
@@ -72,6 +75,14 @@ bot.on("message", async (msg) => {
   });
 
   bot.sendMessage(chatId, reply.data.choices[0].text);
+});
+
+app.get("/", (req, res) => {
+  res.send("Telegram ChatBot is running");
+});
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Telegram ChatBot is listening");
 });
 
 // Start the bot listening for incoming messages
