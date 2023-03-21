@@ -74,7 +74,8 @@ bot.on("message", async (msg) => {
     bot.sendMessage(chatId, "Please enter some text to generate an image:");
     isGeneratingImage = true;
 
-    bot.on("message", async (msg) => {
+    bot.once("message", async (msg) => {
+      // use bot.once to only listen once
       if (isGeneratingImage && msg.text) {
         const text = msg.text;
 
@@ -108,7 +109,8 @@ bot.on("message", async (msg) => {
   if (msg.text === "/chat") {
     bot.sendMessage(chatId, "Please enter a message:");
 
-    bot.on("message", async (msg) => {
+    const chatListener = async (msg) => {
+      // create a named function for the listener
       if (
         msg.text != /\/help/ ||
         msg.text != /\/generate/ ||
@@ -126,7 +128,25 @@ bot.on("message", async (msg) => {
 
         bot.sendMessage(chatId, reply.data.choices[0].text);
       }
+    };
+
+    bot.on("message", chatListener); // add the listener
+
+    bot.once("message", (msg) => {
+      // use bot.once to listen only once for the end of the chat
+      if (
+        msg.text === "/help" ||
+        msg.text === "/generate" ||
+        msg.text === "/menu" ||
+        msg.text === "/start" ||
+        msg.text === "/website" ||
+        msg.text === "/chat"
+      ) {
+        bot.sendMessage(chatId, "Ending chat...");
+        bot.removeListener("message", chatListener); // remove the listener when the chat is over
+      }
     });
+
     return;
   }
 
