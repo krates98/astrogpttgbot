@@ -47,7 +47,7 @@ bot.on("message", async (msg) => {
       "🥪 /menu - Show menu\n" +
       "🌐 /website - Get website URL\n" +
       "🎨 /generate - Generate image using text\n" +
-      "💬 /chat - Start a chat";
+      "💬 /chat - Start a chat with the bot";
 
     const options = {
       reply_markup: {
@@ -70,18 +70,18 @@ bot.on("message", async (msg) => {
   }
 
   if (msg.text === "/generate") {
-    bot.sendMessage(chatId, "Please enter some text to generate an image:");
+    bot.sendMessage(chatId, "Please enter a prompt to generate an image:");
 
-    bot.on("message", async (msg) => {
+    bot.once("message", async (msg) => {
       if (msg.text) {
-        const text = msg.text;
+        const prompt = msg.text;
 
         bot.sendMessage(chatId, "Generating image, please wait...");
 
         try {
           const result = await openai.images.create({
             model: "image-alpha-001",
-            prompt: `generate image using text "${text}"`,
+            prompt: prompt,
             size: "512x512",
           });
 
@@ -98,15 +98,11 @@ bot.on("message", async (msg) => {
 
     return;
   }
-
   if (msg.text === "/chat") {
-    bot.sendMessage(
-      chatId,
-      "Please write something to get a response. Type /menu to go back to the main menu."
-    );
-
+    bot.sendMessage(chatId, "Please enter a message:");
     bot.on("message", async (msg) => {
       if (msg.text) {
+        // If none of the message commands match, send a response using OpenAI
         const reply = await openai.createCompletion({
           max_tokens: 100,
           model: "text-curie-001",
@@ -123,13 +119,11 @@ bot.on("message", async (msg) => {
         }, 2000);
       }
     });
-
     return;
   }
 
   if (msg.text === "/generate") {
-    bot.sendMessage(chatId, "Please enter a description to generate an image:");
-
+    bot.sendMessage(chatId, "Please enter a description of the image:");
     bot.on("message", async (msg) => {
       if (msg.text) {
         const text = msg.text;
@@ -153,7 +147,6 @@ bot.on("message", async (msg) => {
         }
       }
     });
-
     return;
   }
 
