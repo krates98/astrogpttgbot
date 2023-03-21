@@ -81,12 +81,12 @@ bot.on("message", async (msg) => {
         bot.sendPhoto(chatId, placeholderImage).then(async (sentMessage) => {
           try {
             const response = await openai.createImage({
-              prompt: "a white siamese cat",
+              model: "image-alpha-001",
+              prompt: text,
               n: 1,
               size: "1024x1024",
             });
 
-            await delay(5000); // add a delay of 5 seconds before sending the actual image
             await bot.deleteMessage(chatId, sentMessage.message_id);
             await bot.sendPhoto(chatId, response.data.data[0].url);
           } catch (error) {
@@ -97,10 +97,6 @@ bot.on("message", async (msg) => {
             console.log(error);
           }
         });
-
-        function delay(ms) {
-          return new Promise((resolve) => setTimeout(resolve, ms));
-        }
 
         isGeneratingImage = false;
       }
