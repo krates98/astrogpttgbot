@@ -74,7 +74,5 @@ bot.on("message", async (msg) => {
   bot.sendMessage(chatId, reply.data.choices[0].text);
 });
 
-// Start the bot listening on the specified port
-bot.listen(port, () => {
-  console.log(`Bot listening on port ${port}`);
-});
+// Start the bot listening for incoming messages
+bot.startPolling();
