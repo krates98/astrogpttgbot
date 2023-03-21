@@ -16,6 +16,9 @@ const openai = new OpenAIApi(config);
 
 const bot = new TelegramBot(botToken, { polling: true });
 
+const placeholderImage =
+  "https://via.placeholder.com/512x512.png?text=Generating+image%2C+please+wait...";
+
 let conversationStarted = false; // flag to keep track of whether the conversation has started or not
 let userRepliesCount = new Map(); // map to keep track of user's reply count
 
@@ -75,23 +78,24 @@ bot.on("message", async (msg) => {
       if (isGeneratingImage && msg.text) {
         const text = msg.text;
 
-        bot.sendMessage(chatId, "Generating image, please wait...");
+        bot.sendPhoto(chatId, placeholderImage).then(async (sentMessage) => {
+          try {
+            const result = await openai.images.create({
+              model: "image-alpha-001",
+              prompt: `generate image using text "${text}"`,
+              size: "512x512",
+            });
 
-        try {
-          const result = await openai.images.create({
-            model: "image-alpha-001",
-            prompt: `generate image using text "${text}"`,
-            size: "512x512",
-          });
-
-          await bot.sendPhoto(chatId, result.data.url);
-        } catch (error) {
-          bot.sendMessage(
-            chatId,
-            "An error occurred while generating the image"
-          );
-          console.log(error);
-        }
+            await bot.deleteMessage(chatId, sentMessage.message_id); // remove the placeholder image
+            await bot.sendPhoto(chatId, result.data.url); // send the actual image
+          } catch (error) {
+            bot.sendMessage(
+              chatId,
+              "An error occurred while generating the image"
+            );
+            console.log(error);
+          }
+        });
 
         isGeneratingImage = false;
       }
