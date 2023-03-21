@@ -46,14 +46,13 @@ bot.on("message", async (msg) => {
       "💁🏻 /help - Get help\n" +
       "🥪 /menu - Show menu\n" +
       "🌐 /website - Get website URL\n" +
-      "🌐 /generate - Generate image\n";
+      "🎨 /generate - Generate image using text";
 
     const options = {
       reply_markup: {
         keyboard: [
           [{ text: "/help" }, { text: "/menu" }],
-          [{ text: "/website" }],
-          { text: "/generate" },
+          [{ text: "/website" }, { text: "/generate" }],
         ],
         resize_keyboard: true,
       },
@@ -69,15 +68,31 @@ bot.on("message", async (msg) => {
   }
 
   if (msg.text === "/generate") {
-    bot.sendMessage(chatId, "Please wait while I generate your image...");
+    bot.sendMessage(chatId, "Please enter some text to generate an image:");
 
-    try {
-      const image = await generateImage();
-      bot.sendPhoto(chatId, image);
-    } catch (error) {
-      bot.sendMessage(chatId, "An error occurred while generating the image");
-      console.log(error);
-    }
+    bot.on("message", async (msg) => {
+      if (msg.text) {
+        const text = msg.text;
+
+        bot.sendMessage(chatId, "Generating image, please wait...");
+
+        try {
+          const result = await openai.images.create({
+            model: "image-alpha-001",
+            prompt: `generate image using text "${text}"`,
+            size: "512x512",
+          });
+
+          bot.sendPhoto(chatId, result.data.url);
+        } catch (error) {
+          bot.sendMessage(
+            chatId,
+            "An error occurred while generating the image"
+          );
+          console.log(error);
+        }
+      }
+    });
 
     return;
   }
@@ -96,7 +111,6 @@ bot.on("message", async (msg) => {
     }
     userRepliesCount.set(user, userRepliesCount.get(user) + 1);
   }
-
   // If none of the message commands match, send a response using OpenAI
   const reply = await openai.createCompletion({
     max_tokens: 100,
