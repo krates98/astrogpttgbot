@@ -2,9 +2,9 @@ const TelegramBot = require("node-telegram-bot-api");
 
 const { Configuration, OpenAIApi } = require("openai");
 
-const botToken = "6141126049:AAF9owgkLVsNZibZZzx-u2GvIkIkY4LuuEA";
+const botToken = openAiToken;
 
-const openaiToken = "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";
+const openaiToken = botToken;
 
 const config = new Configuration({
   apiKey: openaiToken,
