@@ -75,4 +75,6 @@ bot.on("message", async (msg) => {
 });
 
 // Start the bot listening for incoming messages
-bot.startPolling();
+bot
+  .on("polling_error", (error) => console.log(error))
+  .listen(port, () => console.log(`Bot is listening on port ${port}`));
