@@ -1,7 +1,7 @@
 {
-  "name": "telaigptbot",
+  "name": "astrochatbot",
   "version": "1.0.0",
-  "description": "A telegram chat bot which uses Open Ai to deliver results",
+  "description": "Get personalized horoscope readings, daily astrology predictions, and expert advice on love, career, and relationships - all from the comfort of your own chat screen.Our AI-powered chatbot uses advanced algorithms to analyze your birth chart, zodiac sign, and other astrological data to provide accurate and insightful predictions.",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
