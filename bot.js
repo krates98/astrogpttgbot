@@ -27,6 +27,8 @@ bot.onText(/\/start/, (msg) => {
   conversationStarted = true; // set the flag to true when the user sends the "/start" command
 });
 
+//sd
+
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
 
