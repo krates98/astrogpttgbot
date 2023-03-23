@@ -132,8 +132,9 @@ bot.on("message", async (msg) => {
 });
 
 const generateRandomTarotReading = async () => {
-  const prompt = "Generate a random tarot reading:\n\n";
-  const completions = await openai.complete({
+  const prompt =
+    "Generate a random tarot reading & tell me how will be my day according to it under 100 words";
+  const completions = await openai.createCompletion({
     engine: "text-davinci-002",
     prompt,
     maxTokens: 500,
