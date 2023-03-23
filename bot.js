@@ -225,6 +225,12 @@ const generateNumberReading = async (msg) => {
 
   const numberResponse = await new Promise((resolve) => {
     bot.once("message", (numberMsg) => {
+      if (!numberMsg.text) {
+        bot.sendMessage(
+          chatId,
+          "Sorry, I couldn't understand your input. Please try again."
+        );
+      }
       resolve(numberMsg.text);
     });
   });
