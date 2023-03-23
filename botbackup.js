@@ -16,22 +16,28 @@ const openai = new OpenAIApi(config);
 
 const bot = new TelegramBot(botToken, { polling: true });
 
+const placeholderImage =
+  "https://via.placeholder.com/512x512.png?text=Generating+image%2C+please+wait...";
+
 const menuMessage =
   "🃏 Please choose an action:\n\n" +
-  "🎴 /tarotreading - Get a random tarot reading\n" +
-  "📜 /tokentarot - Get a specific tarot reading\n" +
-  "💔 /brokenheart - Get advice for a broken heart\n" +
-  "😭 /depression - Get help with depression\n" +
+  "💁🏻 /help - Get help\n" +
+  "🥪 /menu - Show menu\n" +
+  "🌐 /website - Get website URL\n" +
+  "🎨 /generate - Generate image using text\n" +
+  "💬 /chat - Start a chat with the bot\n" +
+  "🔮 /tarotreading - Get a random tarot reading\n" +
+  "🔮 /tokentarot - Get a specific tarot reading\n" +
+  "🔮 /brokenheart - Get advice for a broken heart\n" +
+  "😔 /depression - Get help with depression\n" +
   "😊 /cheermeup - Get cheered up\n" +
   "💰 /getrich - Get advice on how to get rich\n" +
   "💼 /shouldinvest - Get investment advice\n" +
   "💪 /health - Get health advice\n" +
-  "💜 /relationship - Get advice on relationships\n" +
-  "🌐 /website - Get website URL\n" +
-  "🥪 /menu - Show menu\n" +
-  "💁🏻 /help - Get help\n";
+  "❤️ /relationship - Get advice on relationships\n" +
+  "🔐 /admin - Admin commands (admins only)";
 
-const adminUsernames = ["astrogpt", "krates98"]; // Replace with the usernames of your admin users
+const adminUsernames = ["your_admin_username_here"]; // Replace with the usernames of your admin users
 
 const userCommandCounts = new Map();
 
@@ -40,10 +46,7 @@ bot.onText(/\/start/, (msg) => {
 });
 
 bot.onText(/\/help/, (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    "Please use /menu everytime you generate an astrological response to get new ones."
-  );
+  bot.sendMessage(msg.chat.id, "This is a help message.");
 });
 
 bot.onText(/\/menu/, (msg) => {
@@ -51,7 +54,15 @@ bot.onText(/\/menu/, (msg) => {
 });
 
 bot.onText(/\/website/, (msg) => {
-  bot.sendMessage(msg.chat.id, "https://www.astroaiguru.com");
+  bot.sendMessage(msg.chat.id, "https://www.telegramgpt.com");
+});
+
+bot.onText(/\/generate/, (msg) => {
+  bot.sendMessage(msg.chat.id, "Please enter some text to generate an image:");
+});
+
+bot.onText(/\/chat/, (msg) => {
+  bot.sendMessage(msg.chat.id, "Please enter a message:");
 });
 
 bot.onText(/\/tarotreading/, async (msg) => {
@@ -129,20 +140,43 @@ bot.on("message", async (msg) => {
   }
 
   userCommandCounts.set(msg.from.id, commandCount + 1);
+
+  if (msg.text === "/generate") {
+    bot.once("message", async (msg) => {
+      if (msg.text) {
+        const text = msg.text;
+
+        bot.sendPhoto(chatId, placeholderImage).then(async (sentMessage) => {
+          try {
+            const response = await openai.createImage({
+              model: "image-alpha-001",
+              prompt: text,
+              n: 1,
+              size: "1024x1024",
+            });
+
+            await bot.deleteMessage(chatId, sentMessage.message_id);
+            await bot.sendPhoto(chatId, response.data.data[0].url);
+          } catch (error) {
+            bot.sendMessage(
+              chatId,
+              "An error occurred while generating the image"
+            );
+            console.log(error);
+          }
+        });
+      }
+    });
+  }
+
+  if (msg.text === "/chat") {
+    bot.sendMessage(chatId, "Please enter a message:");
+    bot.on("message", chatListener);
+  }
 });
 
 const generateRandomTarotReading = async () => {
-  const prompt = "Generate a random tarot reading:\n\n";
-  const completions = await openai.complete({
-    engine: "text-davinci-002",
-    prompt,
-    maxTokens: 500,
-    n: 1,
-    stop: "\n\n",
-    temperature: 0.7,
-  });
-  const message = completions.choices[0].text.trim();
-  return message;
+  // Code to generate a random tarot reading goes here
 };
 
 const generateTarotReading = async (cardName) => {
@@ -179,6 +213,26 @@ const getRelationshipAdvice = async () => {
 
 const isAdmin = (username) => {
   return adminUsernames.includes(username);
+};
+
+const chatListener = async (msg) => {
+  if (
+    msg.text != "/help" &&
+    msg.text != "/generate" &&
+    msg.text != "/menu" &&
+    msg.text != "/start" &&
+    msg.text != "/website" &&
+    msg.text != "/chat"
+  ) {
+    const reply = await openai.createCompletion({
+      max_tokens: 100,
+      model: "text-curie-001",
+      prompt: msg.text + " (please keep your answer within 100 words)",
+      temperature: 0,
+    });
+
+    bot.sendMessage(chatId, reply.data.choices[0].text);
+  }
 };
 
 app.get("/", (req, res) => {
