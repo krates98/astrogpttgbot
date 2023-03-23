@@ -19,15 +19,23 @@ const bot = new TelegramBot(botToken, { polling: true });
 
 const menuMessage =
   "🃏 Please choose an action:\n\n" +
-  "🎴 /tarotreading - Get a random tarot reading\n" +
-  "📜 /tokentarot - Get a specific tarot reading\n" +
-  "💔 /brokenheart - Get advice for a broken heart\n" +
-  "😭 /depression - Get help with depression\n" +
-  "😊 /cheermeup - Get cheered up\n" +
-  "💰 /getrich - Get advice on how to get rich\n" +
-  "💼 /shouldinvest - Get investment advice\n" +
-  "💪 /health - Get health advice\n" +
-  "💜 /relationship - Get advice on relationships\n" +
+  "   ----------------------\n\n" +
+  "📜 Number Predictions Based On Numerology\n\n" +
+  "   ----------------------\n" +
+  "🔢 /numberastro - We analyze & predict\n" +
+  "   ----------------------\n\n" +
+  "📜 Future Predictions Based On Tarot Reading\n\n" +
+  "   ----------------------\n\n" +
+  "🎴 /tarotreading - We pick a random Tarot for you\n" +
+  "🗂️ /tokentarot - We do a THREE-CARD tarot for you\n" +
+  "💔 /brokenheart - Advice for a broken heart using Tarot\n" +
+  "😭 /depression - Advice for depression using Tarot\n" +
+  "😊 /cheermeup - We tell only the positives of your Tarot Pick\n" +
+  "💰 /getrich - Will you get rich (near future) Tarot Pick\n" +
+  "💼 /shouldinvest - Think of a Investment you are about to do & then click\n" +
+  "💪 /health - How is your health (near future) going to be\n" +
+  "💜 /relationship - Your relationships (near future) according to tarot\n" +
+  "   ----------------------\n\n" +
   "🌐 /website - Get website URL\n" +
   "🥪 /menu - Show menu\n" +
   "💁🏻 /help - Get help\n";
@@ -43,9 +51,11 @@ bot.onText(/\/start/, (msg) => {
 bot.onText(/\/help/, (msg) => {
   bot.sendMessage(
     msg.chat.id,
-    "Please use /menu every time you generate an astrological response to get new ones."
+    "Please use /menu every time you generate an astrological response to get new ones. Also as a Basic User you are limited to 5 /commands in a day "
   );
 });
+
+//User Commands
 
 bot.onText(/\/menu/, (msg) => {
   bot.sendMessage(msg.chat.id, menuMessage);
@@ -58,6 +68,14 @@ bot.onText(/\/website/, (msg) => {
 bot.onText(/\/tarotreading/, async (msg) => {
   await handleCommand(msg, generateRandomTarotReading);
 });
+
+//Numerology
+
+bot.onText(/\/numberastro/, async (msg) => {
+  await handleCommand(msg, generateNumberReading(msg));
+});
+
+// Tarot Astrology
 
 bot.onText(/\/tokentarot/, async (msg) => {
   await handleCommand(msg, generateTarotReading);
@@ -159,6 +177,69 @@ const handleCommand = async (msg, commandFunction) => {
   bot.sendMessage(chatId, response);
 };
 
+// Numerlogy Functions
+
+const generateNumberReading = async (msg) => {
+  const chatId = msg.chat.id;
+
+  if (
+    userCommandCounts.has(msg.from.id) &&
+    userCommandCounts.get(msg.from.id) >= 5 &&
+    !isAdmin(msg.from.username)
+  ) {
+    bot.sendMessage(
+      chatId,
+      "You have exceeded the maximum number of bot commands. Please try again later."
+    );
+    return;
+  }
+
+  bot.sendMessage(
+    chatId,
+    "Please enter a number you want to check its value according to numerology (e.g. phone number, house number, ethereum wallet address):",
+    { reply_markup: { force_reply: true } }
+  );
+
+  bot.onReplyToMessage(chatId, msg.message_id, async (replyMsg) => {
+    const input = replyMsg.text.trim();
+
+    let number;
+    if (input.startsWith("0x")) {
+      // Ethereum wallet address
+      const hex = input.slice(2);
+      if (!/^[0-9A-Fa-f]+$/.test(hex)) {
+        bot.sendMessage(chatId, "Invalid Ethereum wallet address.");
+        return;
+      }
+      number = parseInt(hex, 16);
+    } else if (!isNaN(input)) {
+      // Numeric input
+      number = parseInt(input);
+    } else {
+      bot.sendMessage(
+        chatId,
+        "Invalid input. Please enter a valid number or Ethereum wallet address."
+      );
+      return;
+    }
+
+    const numerologyValue = calculateNumerologyValue(number);
+    bot.sendMessage(
+      chatId,
+      `The numerology value of ${input} is ${numerologyValue}.`
+    );
+
+    if (!userCommandCounts.has(msg.from.id)) {
+      userCommandCounts.set(msg.from.id, 0);
+    }
+
+    const commandCount = userCommandCounts.get(msg.from.id);
+    userCommandCounts.set(msg.from.id, commandCount + 1);
+  });
+};
+
+// Tarot Reading Functions
+
 const generateRandomTarotReading = async () => {
   const prompt = "Generate a random tarot reading";
   const reply = await openai.createCompletion({
@@ -178,7 +259,7 @@ const generateTarotReading = async () => {
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-davinci-002",
-    prompt: prompt + " (please summarize answer within 400 words) ",
+    prompt: prompt + " (please write it down as short as possible) ",
     temperature: 0.7,
   });
 
