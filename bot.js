@@ -164,7 +164,7 @@ const generateRandomTarotReading = async () => {
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
-    prompt: prompt + " (please keep your answer within 100 words)",
+    prompt: prompt + " (please summarize answer within 100 words)",
     temperature: 0.7,
   });
 
@@ -178,7 +178,7 @@ const generateTarotReading = async () => {
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-davinci-002",
-    prompt: prompt + " (please keep your answer within 400 words) ",
+    prompt: prompt + " (please summarize answer within 400 words) ",
     temperature: 0.7,
   });
 
@@ -192,7 +192,7 @@ const getBrokenHeartAdvice = async () => {
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
-    prompt: prompt + " (please keep your answer within 100 words)",
+    prompt: prompt + " (please summarize answer within 100 words)",
     temperature: 0.7,
   });
 
@@ -206,7 +206,7 @@ const getDepressionHelp = async () => {
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
-    prompt: prompt + " (please keep your answer within 100 words)",
+    prompt: prompt + " (please summarize answer within 100 words)",
     temperature: 0.7,
   });
 
@@ -219,7 +219,7 @@ const getCheerUp = async () => {
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
-    prompt: prompt + " (please keep your answer within 100 words)",
+    prompt: prompt + " (please summarize answer within 100 words)",
     temperature: 0.7,
   });
 
@@ -233,7 +233,7 @@ const getRichAdvice = async () => {
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
-    prompt: prompt + " (please keep your answer within 100 words)",
+    prompt: prompt + " (please summarize answer within 100 words)",
     temperature: 0.7,
   });
 
@@ -249,7 +249,7 @@ const getInvestmentAdvice = async () => {
     model: "text-davinci-002",
     prompt:
       prompt +
-      " (please keep your answer within 200 words) + always start the answer with = (The investment you are thinking of doing will return ) + negative or positive return according to you",
+      " (please summarize answer within 200 words) + always start the answer with = (The investment you are thinking of doing will return ) + negative or positive return according to you",
     temperature: 0.7,
   });
 
@@ -263,7 +263,7 @@ const getHealthAdvice = async () => {
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
-    prompt: prompt + " (please keep your answer within 100 words)",
+    prompt: prompt + " (please summarize answer within 100 words)",
     temperature: 0.7,
   });
 
@@ -277,7 +277,7 @@ const getRelationshipAdvice = async () => {
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
-    prompt: prompt + " (please keep your answer within 100 words)",
+    prompt: prompt + " (please summarize answer within 100 words)",
     temperature: 0.7,
   });
 
