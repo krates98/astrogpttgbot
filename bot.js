@@ -72,7 +72,7 @@ bot.onText(/\/tarotreading/, async (msg) => {
 //Numerology
 
 bot.onText(/\/numberastro/, async (msg) => {
-  await handleCommand(msg, generateNumberReading(msg));
+  await handleCommand(msg, generateNumberReading);
 });
 
 // Tarot Astrology
@@ -173,69 +173,96 @@ const handleCommand = async (msg, commandFunction) => {
 
   userCommandCounts.set(userId, commandCount + 1);
 
-  const response = await commandFunction();
+  if (!commandFunction || typeof commandFunction !== "function") {
+    bot.sendMessage(chatId, "Invalid command.");
+    return;
+  }
+
+  const response = await commandFunction(msg);
   bot.sendMessage(chatId, response);
 };
 
 // Numerlogy Functions
 
+const getNumerologyValue = (input) => {
+  const regex = /0x([0-9a-fA-F]+)/;
+  const match = input.match(regex);
+
+  if (match) {
+    const address = match[1];
+    const digits = address.split("").filter((c) => /[0-9]/.test(c));
+    const numerologyValue = digits.reduce(
+      (sum, digit) => sum + parseInt(digit),
+      0
+    );
+    return numerologyValue;
+  }
+
+  const inputDigits = input.split("").filter((c) => /[0-9]/.test(c));
+  if (inputDigits.length === 0) {
+    return null;
+  }
+
+  const numerologyValue = inputDigits.reduce(
+    (sum, digit) => sum + parseInt(digit),
+    0
+  );
+
+  if (numerologyValue > 9) {
+    return getNumerologyValue(numerologyValue.toString());
+  }
+
+  return numerologyValue;
+};
+
 const generateNumberReading = async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
 
-  if (
-    userCommandCounts.has(msg.from.id) &&
-    userCommandCounts.get(msg.from.id) >= 5 &&
-    !isAdmin(msg.from.username)
-  ) {
+  const promptMessage =
+    "Please enter a (e.g. Phone number, House number, Ethereum wallet address, or even a string) we will break it down to a number and then respond : ";
+  bot.sendMessage(chatId, promptMessage);
+
+  const numberResponse = await new Promise((resolve) => {
+    bot.once("message", (numberMsg) => {
+      resolve(numberMsg.text);
+    });
+  });
+
+  const number = numberResponse.trim();
+  const numerologyValue = getNumerologyValue(number);
+
+  if (numerologyValue === null) {
+    bot.sendMessage(chatId, "Invalid input. Please enter a valid number.");
+    return;
+  }
+
+  console.log(numerologyValue);
+
+  const prompt = `The total of your number is ${numerologyValue} generally viewed in numerology/astrology?`;
+
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-davinci-002",
+    prompt: prompt,
+    temperature: 0,
+  });
+
+  let response = reply.data.choices[0].text;
+  if (!response) {
+    console.error("Empty response from OpenAI API");
     bot.sendMessage(
       chatId,
-      "You have exceeded the maximum number of bot commands. Please try again later."
+      "Sorry, I couldn't generate a response for that input."
     );
     return;
   }
 
-  bot.sendMessage(
-    chatId,
-    "Please enter a number you want to check its value according to numerology (e.g. phone number, house number, ethereum wallet address):",
-    { reply_markup: { force_reply: true } }
-  );
-
-  bot.onReplyToMessage(chatId, msg.message_id, async (replyMsg) => {
-    const input = replyMsg.text.trim();
-
-    let number;
-    if (input.startsWith("0x")) {
-      // Ethereum wallet address
-      const hex = input.slice(2);
-      if (!/^[0-9A-Fa-f]+$/.test(hex)) {
-        bot.sendMessage(chatId, "Invalid Ethereum wallet address.");
-        return;
-      }
-      number = parseInt(hex, 16);
-    } else if (!isNaN(input)) {
-      // Numeric input
-      number = parseInt(input);
-    } else {
-      bot.sendMessage(
-        chatId,
-        "Invalid input. Please enter a valid number or Ethereum wallet address."
-      );
-      return;
-    }
-
-    const numerologyValue = calculateNumerologyValue(number);
-    bot.sendMessage(
-      chatId,
-      `The numerology value of ${input} is ${numerologyValue}.`
-    );
-
-    if (!userCommandCounts.has(msg.from.id)) {
-      userCommandCounts.set(msg.from.id, 0);
-    }
-
-    const commandCount = userCommandCounts.get(msg.from.id);
-    userCommandCounts.set(msg.from.id, commandCount + 1);
-  });
+  try {
+    await bot.sendMessage(chatId, response);
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 // Tarot Reading Functions
