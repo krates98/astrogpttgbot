@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+require("dotenv").config();
 
 const TelegramBot = require("node-telegram-bot-api");
 const { Configuration, OpenAIApi } = require("openai");
@@ -42,7 +43,7 @@ bot.onText(/\/start/, (msg) => {
 bot.onText(/\/help/, (msg) => {
   bot.sendMessage(
     msg.chat.id,
-    "Please use /menu everytime you generate an astrological response to get new ones."
+    "Please use /menu every time you generate an astrological response to get new ones."
   );
 });
 
@@ -55,52 +56,42 @@ bot.onText(/\/website/, (msg) => {
 });
 
 bot.onText(/\/tarotreading/, async (msg) => {
-  const reading = await generateRandomTarotReading();
-  bot.sendMessage(msg.chat.id, reading);
+  await handleCommand(msg, generateRandomTarotReading);
 });
 
-bot.onText(/\/tokentarot (.+)/, async (msg, match) => {
-  const cardName = match[1];
-  const reading = await generateTarotReading(cardName);
-  bot.sendMessage(msg.chat.id, reading);
+bot.onText(/\/tokentarot/, async (msg) => {
+  await handleCommand(msg, generateTarotReading);
 });
 
 bot.onText(/\/brokenheart/, async (msg) => {
-  const advice = await getBrokenHeartAdvice();
-  bot.sendMessage(msg.chat.id, advice);
+  await handleCommand(msg, getBrokenHeartAdvice);
 });
 
 bot.onText(/\/depression/, async (msg) => {
-  const help = await getDepressionHelp();
-  bot.sendMessage(msg.chat.id, help);
+  await handleCommand(msg, getDepressionHelp);
 });
 
 bot.onText(/\/cheermeup/, async (msg) => {
-  const cheerup = await getCheerUp();
-  bot.sendMessage(msg.chat.id, cheerup);
+  await handleCommand(msg, getCheerUp);
 });
 
 bot.onText(/\/getrich/, async (msg) => {
-  const advice = await getRichAdvice();
-  bot.sendMessage(msg.chat.id, advice);
+  await handleCommand(msg, getRichAdvice);
 });
 
 bot.onText(/\/shouldinvest/, async (msg) => {
-  const advice = await getInvestmentAdvice();
-  bot.sendMessage(msg.chat.id, advice);
+  await handleCommand(msg, getInvestmentAdvice);
 });
 
 bot.onText(/\/health/, async (msg) => {
-  const advice = await getHealthAdvice();
-  bot.sendMessage(msg.chat.id, advice);
+  await handleCommand(msg, getHealthAdvice);
 });
 
 bot.onText(/\/relationship/, async (msg) => {
-  const advice = await getRelationshipAdvice();
-  bot.sendMessage(msg.chat.id, advice);
+  await handleCommand(msg, getRelationshipAdvice);
 });
 
-bot.onText(/\/admin/, (msg) => {
+bot.onText(/\admin/, (msg) => {
   if (!isAdmin(msg.from.username)) {
     bot.sendMessage(
       msg.chat.id,
@@ -120,6 +111,7 @@ bot.on("message", async (msg) => {
   }
 
   const commandCount = userCommandCounts.get(msg.from.id);
+
   if (commandCount >= 5 && !isAdmin(msg.from.username)) {
     bot.sendMessage(
       chatId,
@@ -128,54 +120,169 @@ bot.on("message", async (msg) => {
     return;
   }
 
-  userCommandCounts.set(msg.from.id, commandCount + 1);
+  if (
+    msg.text.startsWith("/tarotreading") ||
+    msg.text.startsWith("/tokentarot") ||
+    msg.text.startsWith("/brokenheart") ||
+    msg.text.startsWith("/depression") ||
+    msg.text.startsWith("/cheermeup") ||
+    msg.text.startsWith("/getrich") ||
+    msg.text.startsWith("/shouldinvest") ||
+    msg.text.startsWith("/health") ||
+    msg.text.startsWith("/relationship")
+  ) {
+    userCommandCounts.set(msg.from.id, commandCount + 1);
+  }
 });
 
+const handleCommand = async (msg, commandFunction) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+
+  if (!userCommandCounts.has(userId)) {
+    userCommandCounts.set(userId, 0);
+  }
+
+  const commandCount = userCommandCounts.get(userId);
+
+  if (commandCount >= 5 && !isAdmin(msg.from.username)) {
+    bot.sendMessage(
+      chatId,
+      "You have exceeded the maximum number of bot commands. Please try again later."
+    );
+    return;
+  }
+
+  userCommandCounts.set(userId, commandCount + 1);
+
+  const response = await commandFunction();
+  bot.sendMessage(chatId, response);
+};
+
 const generateRandomTarotReading = async () => {
-  const prompt =
-    "Generate a random tarot reading & tell me how will be my day according to it under 100 words";
-  const completions = await openai.createCompletion({
-    engine: "text-davinci-002",
-    prompt,
-    maxTokens: 500,
-    n: 1,
-    stop: "\n\n",
+  const prompt = "Generate a random tarot reading";
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-curie-001",
+    prompt: prompt + " (please keep your answer within 100 words)",
     temperature: 0.7,
   });
-  const message = completions.choices[0].text.trim();
+
+  const message = reply.data.choices[0].text.trim();
   return message;
 };
 
-const generateTarotReading = async (cardName) => {
-  // Code to generate a specific tarot reading goes here
+const generateTarotReading = async () => {
+  const prompt =
+    "Generate a random tarot reading with 3 cards and use it tell me detailed summary of how my life will be for now ";
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-davinci-002",
+    prompt: prompt + " (please keep your answer within 400 words) ",
+    temperature: 0.7,
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  return message;
 };
 
 const getBrokenHeartAdvice = async () => {
-  // Code to get advice for a broken heart goes here
+  const prompt =
+    "Generate a random tarot reading and use it tell me if my heart is broken what will happen next";
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-curie-001",
+    prompt: prompt + " (please keep your answer within 100 words)",
+    temperature: 0.7,
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  return message;
 };
 
 const getDepressionHelp = async () => {
-  // Code to get help with depression
+  const prompt =
+    "Generate a random tarot reading and use it tell me how to fix my depression";
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-curie-001",
+    prompt: prompt + " (please keep your answer within 100 words)",
+    temperature: 0.7,
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  return message;
 };
 
 const getCheerUp = async () => {
-  // Code to get cheered up goes here
+  const prompt = "Generate a random tarot reading and use it cheer me up";
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-curie-001",
+    prompt: prompt + " (please keep your answer within 100 words)",
+    temperature: 0.7,
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  return message;
 };
 
 const getRichAdvice = async () => {
-  // Code to get advice on how to get rich goes here
+  const prompt =
+    "Generate a random tarot reading and use it how can I get rich";
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-curie-001",
+    prompt: prompt + " (please keep your answer within 100 words)",
+    temperature: 0.7,
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  return message;
 };
 
 const getInvestmentAdvice = async () => {
-  // Code to get investment advice goes here
+  const prompt =
+    "Generate a random tarot reading and use it tell me should I invest in the thing I Have in mind always start the answer with";
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-davinci-002",
+    prompt:
+      prompt +
+      " (please keep your answer within 200 words) + always start the answer with = (The investment you are thinking of doing will return ) + negative or positive return according to you",
+    temperature: 0.7,
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  return message;
 };
 
 const getHealthAdvice = async () => {
-  // Code to get health advice goes here
+  const prompt =
+    "Generate a random tarot reading and use it to tell me about my health";
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-curie-001",
+    prompt: prompt + " (please keep your answer within 100 words)",
+    temperature: 0.7,
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  return message;
 };
 
 const getRelationshipAdvice = async () => {
-  // Code to get advice on relationships goes here
+  const prompt =
+    "Generate a random tarot reading and use it to give me relationship advice";
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-curie-001",
+    prompt: prompt + " (please keep your answer within 100 words)",
+    temperature: 0.7,
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  return message;
 };
 
 const isAdmin = (username) => {
