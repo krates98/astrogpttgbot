@@ -20,21 +20,25 @@ const bot = new TelegramBot(botToken, { polling: true });
 const menuMessage =
   "🃏 Please choose an action:\n\n" +
   "   ----------------------\n\n" +
+  "📜 Life Prediction Based on Vedic Astrology\n\n" +
+  "   ----------------------\n" +
+  "🇮🇳 /vedicastro - Based on DOB, Time and BirthPlace\n" +
+  "   ----------------------\n\n" +
   "📜 Number Predictions Based On Numerology\n\n" +
   "   ----------------------\n" +
-  "🔢 /numberastro - We analyze & predict\n" +
+  "🔢 /numberastro - We analyze & predict Numbers\n" +
   "   ----------------------\n\n" +
   "📜 Future Predictions Based On Tarot Reading\n\n" +
-  "   ----------------------\n\n" +
+  "   ----------------------\n" +
   "🎴 /tarotreading - We pick a random Tarot for you\n" +
   "🗂️ /tokentarot - We do a THREE-CARD tarot for you\n" +
   "💔 /brokenheart - Advice for a broken heart using Tarot\n" +
   "😭 /depression - Advice for depression using Tarot\n" +
   "😊 /cheermeup - We tell only the positives of your Tarot Pick\n" +
   "💰 /getrich - Will you get rich (near future) Tarot Pick\n" +
-  "💼 /shouldinvest - Think of a Investment you are about to do & then click\n" +
+  "💼 /shouldinvest - Think of a Investment & then click\n" +
   "💪 /health - How is your health (near future) going to be\n" +
-  "💜 /relationship - Your relationships (near future) according to tarot\n" +
+  "💜 /relationship - Your relationships (near future)\n" +
   "   ----------------------\n\n" +
   "🌐 /website - Get website URL\n" +
   "🥪 /menu - Show menu\n" +
@@ -67,6 +71,12 @@ bot.onText(/\/website/, (msg) => {
 
 bot.onText(/\/tarotreading/, async (msg) => {
   await handleCommand(msg, generateRandomTarotReading);
+});
+
+//Vedic Astro
+
+bot.onText(/\/vedicastro/, async (msg) => {
+  await handleCommand(msg, generateVedicAstroReading);
 });
 
 //Numerology
@@ -130,7 +140,7 @@ bot.on("message", async (msg) => {
 
   const commandCount = userCommandCounts.get(msg.from.id);
 
-  if (commandCount >= 5 && !isAdmin(msg.from.username)) {
+  if (commandCount >= 10 && !isAdmin(msg.from.username)) {
     bot.sendMessage(
       chatId,
       "You have exceeded the maximum number of bot commands. Please try again later."
@@ -182,6 +192,50 @@ const handleCommand = async (msg, commandFunction) => {
   bot.sendMessage(chatId, response);
 };
 
+// Vedic Astrology
+
+const generateVedicAstroReading = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage =
+    "Please enter your date of birth (DD/MM/YYYY), time of birth (HH:MM AM/PM), and place of birth (city, state, country): For eg: (13/03/1993,03:50 PM,Kanpur, Uttar Pradesh, India) ";
+  bot.sendMessage(chatId, promptMessage);
+
+  const dobResponse = await new Promise((resolve) => {
+    bot.once("message", (dobMsg) => {
+      resolve(dobMsg.text);
+    });
+  });
+
+  const [dob, time, place] = dobResponse.split(",").map((str) => str.trim());
+
+  const prompt = `What insights can you provide based on my birth details?\nDOB: ${dob}\nTime: ${time}\nPlace: ${place}`;
+
+  const reply = await openai.createCompletion({
+    max_tokens: 400,
+    model: "text-davinci-003",
+    prompt: prompt,
+    temperature: 0,
+  });
+
+  let response = reply.data.choices[0].text;
+
+  if (!response) {
+    console.error("Empty response from OpenAI API");
+    bot.sendMessage(
+      chatId,
+      "Sorry, I couldn't generate a response for that input."
+    );
+    return;
+  }
+
+  try {
+    await bot.sendMessage(chatId, response);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 // Numerlogy Functions
 
 const getNumerologyValue = (input) => {
@@ -217,7 +271,6 @@ const getNumerologyValue = (input) => {
 
 const generateNumberReading = async (msg) => {
   const chatId = msg.chat.id;
-  const userId = msg.from.id;
 
   const promptMessage =
     "Please enter a (e.g. Phone number, House number, Ethereum wallet address, or even a string) we will break it down to a number and then respond : ";
@@ -225,12 +278,7 @@ const generateNumberReading = async (msg) => {
 
   const numberResponse = await new Promise((resolve) => {
     bot.once("message", (numberMsg) => {
-      if (!numberMsg.text) {
-        bot.sendMessage(
-          chatId,
-          "Sorry, I couldn't understand your input. Please try again."
-        );
-      }
+      console.log(numberMsg.text);
       resolve(numberMsg.text);
     });
   });
@@ -239,35 +287,34 @@ const generateNumberReading = async (msg) => {
   const numerologyValue = getNumerologyValue(number);
 
   if (numerologyValue === null) {
-    bot.sendMessage(chatId, "Invalid input. Please enter a valid number.");
-    return;
-  }
-
-  console.log(numerologyValue);
-
-  const prompt = `The total of your number is ${numerologyValue} generally viewed in numerology/astrology?`;
-
-  const reply = await openai.createCompletion({
-    max_tokens: 100,
-    model: "text-davinci-002",
-    prompt: prompt,
-    temperature: 0,
-  });
-
-  let response = reply.data.choices[0].text;
-  if (!response) {
-    console.error("Empty response from OpenAI API");
     bot.sendMessage(
       chatId,
-      "Sorry, I couldn't generate a response for that input."
+      "Invalid input. Please enter a valid number or Ether Address."
     );
     return;
   }
 
+  const prompt = `How is ${numerologyValue} generally viewed in numerology/astrology? Give response only as (good, very good,bad,very bad)`;
+
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-davinci-002",
+    prompt:
+      prompt +
+      `complete answer within 1 line also start with total of number is ${numerologyValue}`,
+    temperature: 0,
+  });
+  let response = reply.data.choices[0].text;
+
+  sendBot(chatId, response);
+};
+
+//seperating bot.sendMessage function Numero
+const sendBot = async (chatId, response) => {
   try {
     await bot.sendMessage(chatId, response);
   } catch (err) {
-    console.error(err);
+    console.error("Error sending response message:", err);
   }
 };
 
