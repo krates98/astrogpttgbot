@@ -71,7 +71,7 @@ bot.onText(/\/website/, (msg) => {
 
 bot.onText(/\/tarotreading/, async (msg) => {
   await handleCommand(msg, generateRandomTarotReading);
-  tryMenu();
+  tryMenu(chatId);
 });
 
 //Vedic Astro
@@ -90,42 +90,42 @@ bot.onText(/\/numberastro/, async (msg) => {
 
 bot.onText(/\/tokentarot/, async (msg) => {
   await handleCommand(msg, generateTarotReading);
-  tryMenu();
+  tryMenu(chatId);
 });
 
 bot.onText(/\/brokenheart/, async (msg) => {
   await handleCommand(msg, getBrokenHeartAdvice);
-  tryMenu();
+  tryMenu(chatId);
 });
 
 bot.onText(/\/depression/, async (msg) => {
   await handleCommand(msg, getDepressionHelp);
-  tryMenu();
+  tryMenu(chatId);
 });
 
 bot.onText(/\/cheermeup/, async (msg) => {
   await handleCommand(msg, getCheerUp);
-  tryMenu();
+  tryMenu(chatId);
 });
 
 bot.onText(/\/getrich/, async (msg) => {
   await handleCommand(msg, getRichAdvice);
-  tryMenu();
+  tryMenu(chatId);
 });
 
 bot.onText(/\/shouldinvest/, async (msg) => {
   await handleCommand(msg, getInvestmentAdvice);
-  tryMenu();
+  tryMenu(chatId);
 });
 
 bot.onText(/\/health/, async (msg) => {
   await handleCommand(msg, getHealthAdvice);
-  tryMenu();
+  tryMenu(chatId);
 });
 
 bot.onText(/\/relationship/, async (msg) => {
   await handleCommand(msg, getRelationshipAdvice);
-  tryMenu();
+  tryMenu(chatId);
 });
 
 bot.onText(/\admin/, (msg) => {
@@ -203,7 +203,7 @@ const handleCommand = async (msg, commandFunction) => {
 
 //Help Command
 
-const tryMenu = () => {
+const tryMenu = (chatId) => {
   bot.sendMessage(chatId, "Please use /menu to get another reading");
 };
 
@@ -241,13 +241,13 @@ const generateVedicAstroReading = async (msg) => {
       chatId,
       "Sorry, I couldn't generate a response for that input."
     );
-    tryMenu();
+    tryMenu(chatId);
     return;
   }
 
   try {
     await bot.sendMessage(chatId, response);
-    tryMenu();
+    tryMenu(chatId);
   } catch (err) {
     console.error(err);
   }
@@ -308,7 +308,7 @@ const generateNumberReading = async (msg) => {
       chatId,
       "Invalid input. Please enter a valid number or Ether Address."
     );
-    tryMenu();
+    tryMenu(chatId);
     return;
   }
 
@@ -325,7 +325,7 @@ const generateNumberReading = async (msg) => {
   let response = reply.data.choices[0].text;
 
   sendBot(chatId, response);
-  tryMenu();
+  tryMenu(chatId);
 };
 
 //seperating bot.sendMessage function Numero
