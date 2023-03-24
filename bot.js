@@ -71,6 +71,7 @@ bot.onText(/\/website/, (msg) => {
 
 bot.onText(/\/tarotreading/, async (msg) => {
   await handleCommand(msg, generateRandomTarotReading);
+  tryMenu();
 });
 
 //Vedic Astro
@@ -89,34 +90,42 @@ bot.onText(/\/numberastro/, async (msg) => {
 
 bot.onText(/\/tokentarot/, async (msg) => {
   await handleCommand(msg, generateTarotReading);
+  tryMenu();
 });
 
 bot.onText(/\/brokenheart/, async (msg) => {
   await handleCommand(msg, getBrokenHeartAdvice);
+  tryMenu();
 });
 
 bot.onText(/\/depression/, async (msg) => {
   await handleCommand(msg, getDepressionHelp);
+  tryMenu();
 });
 
 bot.onText(/\/cheermeup/, async (msg) => {
   await handleCommand(msg, getCheerUp);
+  tryMenu();
 });
 
 bot.onText(/\/getrich/, async (msg) => {
   await handleCommand(msg, getRichAdvice);
+  tryMenu();
 });
 
 bot.onText(/\/shouldinvest/, async (msg) => {
   await handleCommand(msg, getInvestmentAdvice);
+  tryMenu();
 });
 
 bot.onText(/\/health/, async (msg) => {
   await handleCommand(msg, getHealthAdvice);
+  tryMenu();
 });
 
 bot.onText(/\/relationship/, async (msg) => {
   await handleCommand(msg, getRelationshipAdvice);
+  tryMenu();
 });
 
 bot.onText(/\admin/, (msg) => {
@@ -192,6 +201,12 @@ const handleCommand = async (msg, commandFunction) => {
   bot.sendMessage(chatId, response);
 };
 
+//Help Command
+
+const tryMenu = () => {
+  bot.sendMessage(chatId, "Please use /menu to get another reading");
+};
+
 // Vedic Astrology
 
 const generateVedicAstroReading = async (msg) => {
@@ -226,11 +241,13 @@ const generateVedicAstroReading = async (msg) => {
       chatId,
       "Sorry, I couldn't generate a response for that input."
     );
+    tryMenu();
     return;
   }
 
   try {
     await bot.sendMessage(chatId, response);
+    tryMenu();
   } catch (err) {
     console.error(err);
   }
@@ -291,6 +308,7 @@ const generateNumberReading = async (msg) => {
       chatId,
       "Invalid input. Please enter a valid number or Ether Address."
     );
+    tryMenu();
     return;
   }
 
@@ -307,6 +325,7 @@ const generateNumberReading = async (msg) => {
   let response = reply.data.choices[0].text;
 
   sendBot(chatId, response);
+  tryMenu();
 };
 
 //seperating bot.sendMessage function Numero
