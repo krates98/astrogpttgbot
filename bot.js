@@ -71,7 +71,6 @@ bot.onText(/\/website/, (msg) => {
 
 bot.onText(/\/tarotreading/, async (msg) => {
   await handleCommand(msg, generateRandomTarotReading);
-  tryMenu(msg.chat.id);
 });
 
 //Vedic Astro
@@ -90,42 +89,34 @@ bot.onText(/\/numberastro/, async (msg) => {
 
 bot.onText(/\/tokentarot/, async (msg) => {
   await handleCommand(msg, generateTarotReading);
-  tryMenu(msg.chat.id);
 });
 
 bot.onText(/\/brokenheart/, async (msg) => {
   await handleCommand(msg, getBrokenHeartAdvice);
-  tryMenu(msg.chat.id);
 });
 
 bot.onText(/\/depression/, async (msg) => {
   await handleCommand(msg, getDepressionHelp);
-  tryMenu(msg.chat.id);
 });
 
 bot.onText(/\/cheermeup/, async (msg) => {
   await handleCommand(msg, getCheerUp);
-  tryMenu(msg.chat.id);
 });
 
 bot.onText(/\/getrich/, async (msg) => {
   await handleCommand(msg, getRichAdvice);
-  tryMenu(msg.chat.id);
 });
 
 bot.onText(/\/shouldinvest/, async (msg) => {
   await handleCommand(msg, getInvestmentAdvice);
-  tryMenu(msg.chat.id);
 });
 
 bot.onText(/\/health/, async (msg) => {
   await handleCommand(msg, getHealthAdvice);
-  tryMenu(msg.chat.id);
 });
 
 bot.onText(/\/relationship/, async (msg) => {
   await handleCommand(msg, getRelationshipAdvice);
-  tryMenu(msg.chat.id);
 });
 
 bot.onText(/\admin/, (msg) => {
@@ -213,16 +204,38 @@ const generateVedicAstroReading = async (msg) => {
   const chatId = msg.chat.id;
 
   const promptMessage =
-    "Please enter your date of birth (DD/MM/YYYY), time of birth (HH:MM AM/PM), and place of birth (city, state, country): For eg: (13/03/1993,03:50 PM,Kanpur, Uttar Pradesh, India) ";
+    "Please enter your date of birth (DD/MM/YYYY), time of birth (HH:MM AM/PM), and place of birth (city, state, country): For eg: (17/03/1993,01:50 PM,Bangalore, Karnataka, India) ";
   bot.sendMessage(chatId, promptMessage);
 
+  // Create a Promise that resolves when the user enters their details
   const dobResponse = await new Promise((resolve) => {
     bot.once("message", (dobMsg) => {
       resolve(dobMsg.text);
     });
   });
 
-  const [dob, time, place] = dobResponse.split(",").map((str) => str.trim());
+  // Wait for either the Promise to resolve or the timeout to occur
+  const [dob, time, place] = await Promise.race([
+    new Promise((resolve) => setTimeout(resolve, 15000)),
+    new Promise((resolve) => {
+      const [dob, time, place] = dobResponse
+        .split(",")
+        .map((str) => str.trim());
+      const prompt = `What insights can you provide based on my birth details?\nDOB: ${dob}\nTime: ${time}\nPlace: ${place}`;
+      bot.sendMessage(chatId, prompt);
+      resolve([dob, time, place]);
+    }),
+  ]);
+
+  if (!dob || !time || !place) {
+    console.error("Invalid response from user");
+    bot.sendMessage(
+      chatId,
+      "Sorry, I couldn't process your input. Please try again."
+    );
+    tryMenu(msg.chat.id);
+    return;
+  }
 
   const prompt = `What insights can you provide based on my birth details?\nDOB: ${dob}\nTime: ${time}\nPlace: ${place}`;
 
@@ -339,8 +352,32 @@ const sendBot = async (chatId, response) => {
 
 // Tarot Reading Functions
 
-const generateRandomTarotReading = async () => {
-  const prompt = "Generate a random tarot reading";
+const generateRandomTarotReading = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage = "Please enter a number between 1 and 78:";
+  bot.sendMessage(chatId, promptMessage);
+
+  const userInput = await new Promise((resolve) => {
+    bot.once("message", (userMsg) => {
+      resolve(userMsg.text);
+    });
+  });
+
+  const cardNumber = parseInt(userInput);
+  if (isNaN(cardNumber) || cardNumber < 1 || cardNumber > 78) {
+    bot.sendMessage(
+      chatId,
+      "Invalid input. Please enter a number between 1 and 78:"
+    );
+    generateRandomTarotReading(msg);
+    return;
+  }
+
+  console.log(cardNumber);
+  const randomNumber = Math.floor(Math.random() * 78) + 1;
+
+  const prompt = `Generate a tarot reading based on card number ${randomNumber}.`;
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
@@ -349,26 +386,117 @@ const generateRandomTarotReading = async () => {
   });
 
   const message = reply.data.choices[0].text.trim();
-  return message;
+  bot.sendMessage(chatId, message);
+  tryMenu(msg.chat.id);
 };
 
-const generateTarotReading = async () => {
+const generateTarotReading = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage =
+    "Please enter 3 numbers between 1-78 separated by commas or spaces:";
+  bot.sendMessage(chatId, promptMessage);
+
+  const response = await new Promise((resolve) => {
+    bot.once("message", (msg) => {
+      resolve(msg.text);
+    });
+  });
+
+  const numbers = response
+    .match(/\d+/g)
+    .map(Number)
+    .filter((num) => num >= 1 && num <= 78);
+
+  if (numbers.length !== 3) {
+    bot.sendMessage(
+      chatId,
+      "Invalid input. Please enter 3 numbers between 1-78 separated by commas or spaces:"
+    );
+    return generateTarotReading(msg);
+  }
+
   const prompt =
-    "Generate a random tarot reading with 3 cards and use it tell me detailed summary of how my life will be for now ";
+    "Generate a random tarot reading with 3 cards you chose also merge the interpretation";
   const reply = await openai.createCompletion({
-    max_tokens: 100,
+    max_tokens: 400,
     model: "text-davinci-002",
     prompt: prompt + " (please write it down as short as possible) ",
     temperature: 0.7,
   });
 
   const message = reply.data.choices[0].text.trim();
-  return message;
+  bot.sendMessage(chatId, message);
+  tryMenu(msg.chat.id);
 };
 
-const getBrokenHeartAdvice = async () => {
-  const prompt =
-    "Generate a random tarot reading and use it tell me if my heart is broken what will happen next";
+const getBrokenHeartAdvice = async (msg) => {
+  const chatId = msg.chat.id;
+
+  let promptMessage = "Please enter a number between 1 and 78:";
+  bot.sendMessage(chatId, promptMessage);
+
+  let userInput;
+  do {
+    try {
+      userInput = await new Promise((resolve) => {
+        bot.once("message", (userMsg) => {
+          resolve(userMsg.text);
+        });
+      });
+
+      const cardNumber = parseInt(userInput);
+      if (isNaN(cardNumber) || cardNumber < 1 || cardNumber > 78) {
+        promptMessage =
+          "Invalid input. Please enter a number between 1 and 78:";
+        continue;
+      }
+
+      console.log(cardNumber);
+
+      const prompt = `Generate a tarot reading and give interpretation only on my current heart being broken`;
+      const reply = await openai.createCompletion({
+        max_tokens: 100,
+        model: "text-curie-001",
+        prompt: prompt + " (please summarize answer within 100 words)",
+        temperature: 0.7,
+      });
+
+      const message = reply.data.choices[0].text.trim();
+      bot.sendMessage(chatId, message);
+      tryMenu(msg.chat.id);
+      return;
+    } catch (err) {
+      console.error(err);
+      promptMessage = "An error occurred. Please try again later.";
+    }
+  } while (true);
+};
+
+const getDepressionHelp = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage = "Please enter a number between 1 and 78:";
+  bot.sendMessage(chatId, promptMessage);
+
+  const userInput = await new Promise((resolve) => {
+    bot.once("message", (userMsg) => {
+      resolve(userMsg.text);
+    });
+  });
+
+  const cardNumber = parseInt(userInput);
+  if (isNaN(cardNumber) || cardNumber < 1 || cardNumber > 78) {
+    bot.sendMessage(
+      chatId,
+      "Invalid input. Please enter a number between 1 and 78:"
+    );
+    return getDepressionHelp(msg);
+  }
+
+  console.log(cardNumber);
+
+  const prompt = `Generate a tarot reading and give interpretation only on how to be motivated right now feeling depressed`;
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
@@ -377,12 +505,35 @@ const getBrokenHeartAdvice = async () => {
   });
 
   const message = reply.data.choices[0].text.trim();
-  return message;
+  bot.sendMessage(chatId, message);
+  tryMenu(msg.chat.id);
 };
 
-const getDepressionHelp = async () => {
-  const prompt =
-    "Generate a random tarot reading and use it tell me how to fix my depression";
+const getCheerUp = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage = "Please enter a number between 1 and 78:";
+  bot.sendMessage(chatId, promptMessage);
+
+  const userInput = await new Promise((resolve) => {
+    bot.once("message", (userMsg) => {
+      resolve(userMsg.text);
+    });
+  });
+
+  const cardNumber = parseInt(userInput);
+  if (isNaN(cardNumber) || cardNumber < 1 || cardNumber > 78) {
+    bot.sendMessage(
+      chatId,
+      "Invalid input. Please enter a number between 1 and 78:"
+    );
+    getCheerUp(msg);
+    return;
+  }
+
+  console.log(cardNumber);
+
+  const prompt = `Generate a tarot reading and give interpretation only cheering me up right now`;
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
@@ -391,11 +542,74 @@ const getDepressionHelp = async () => {
   });
 
   const message = reply.data.choices[0].text.trim();
-  return message;
+  bot.sendMessage(chatId, message);
+  tryMenu(msg.chat.id);
 };
 
-const getCheerUp = async () => {
-  const prompt = "Generate a random tarot reading and use it cheer me up";
+const getRichAdvice = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage =
+    "Please enter a number between 1 and 78: (Keep thinking of your investment right now:)";
+  bot.sendMessage(chatId, promptMessage);
+
+  const userInput = await new Promise((resolve) => {
+    bot.once("message", (userMsg) => {
+      resolve(userMsg.text);
+    });
+  });
+
+  const cardNumber = parseInt(userInput);
+  if (isNaN(cardNumber) || cardNumber < 1 || cardNumber > 78) {
+    bot.sendMessage(
+      chatId,
+      "Invalid input. Please enter a number between 1 and 78:"
+    );
+    getRichAdvice(msg);
+    return;
+  }
+
+  console.log(cardNumber);
+
+  const prompt = `Generate a tarot reading and give interpretation only on will I get rich`;
+  const reply = await openai.createCompletion({
+    max_tokens: 100,
+    model: "text-curie-001",
+    prompt: prompt + " (please keep short as possible)",
+    temperature: 0.7,
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  bot.sendMessage(chatId, message);
+  tryMenu(msg.chat.id);
+};
+
+const getInvestmentAdvice = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage =
+    "Please enter a number between 1 and 78: (Keep thinking of your investment right now:)";
+  bot.sendMessage(chatId, promptMessage);
+
+  const userInput = await new Promise((resolve) => {
+    bot.once("message", (userMsg) => {
+      resolve(userMsg.text);
+    });
+  });
+
+  const cardNumber = parseInt(userInput);
+  if (isNaN(cardNumber) || cardNumber < 1 || cardNumber > 78) {
+    bot.sendMessage(
+      chatId,
+      "Invalid input. Please enter a number between 1 and 78:"
+    );
+    getInvestmentAdvice(msg);
+    return;
+  }
+
+  console.log(cardNumber);
+
+  const prompt = `Generate a tarot reading and give interpretation only on me about to invest in something`;
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
@@ -404,12 +618,35 @@ const getCheerUp = async () => {
   });
 
   const message = reply.data.choices[0].text.trim();
-  return message;
+  bot.sendMessage(chatId, message);
+  tryMenu(msg.chat.id);
 };
 
-const getRichAdvice = async () => {
-  const prompt =
-    "Generate a random tarot reading and use it how can I get rich";
+const getHealthAdvice = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage = "Please enter a number between 1 and 78:";
+  bot.sendMessage(chatId, promptMessage);
+
+  const userInput = await new Promise((resolve) => {
+    bot.once("message", (userMsg) => {
+      resolve(userMsg.text);
+    });
+  });
+
+  const cardNumber = parseInt(userInput);
+  if (isNaN(cardNumber) || cardNumber < 1 || cardNumber > 78) {
+    bot.sendMessage(
+      chatId,
+      "Invalid input. Please enter a number between 1 and 78:"
+    );
+    getHealthAdvice(msg);
+    return;
+  }
+
+  console.log(cardNumber);
+
+  const prompt = `Generate a tarot reading and give interpretation only on my health right now`;
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
@@ -418,42 +655,37 @@ const getRichAdvice = async () => {
   });
 
   const message = reply.data.choices[0].text.trim();
-  return message;
+  bot.sendMessage(chatId, message);
+  tryMenu(msg.chat.id);
 };
 
-const getInvestmentAdvice = async () => {
-  const prompt =
-    "Generate a random tarot reading and use it tell me should I invest in the thing I Have in mind always start the answer with";
-  const reply = await openai.createCompletion({
-    max_tokens: 100,
-    model: "text-davinci-002",
-    prompt:
-      prompt +
-      " (please summarize answer within 200 words) + always start the answer with = (The investment you are thinking of doing will return ) + negative or positive return according to you",
-    temperature: 0.7,
+const getRelationshipAdvice = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage = "Please enter a number between 1 and 78:";
+  bot.sendMessage(chatId, promptMessage);
+
+  const userInput = await new Promise((resolve) => {
+    bot.once("message", (userMsg) => {
+      resolve(userMsg.text);
+    });
   });
 
-  const message = reply.data.choices[0].text.trim();
-  return message;
-};
+  const cardNumber = parseInt(userInput);
+  if (isNaN(cardNumber) || cardNumber < 1 || cardNumber > 78) {
+    bot.sendMessage(
+      chatId,
+      "Invalid input. Please enter a number between 1 and 78:"
+    );
+    setTimeout(() => {
+      getRelationshipAdvice(msg);
+    }, 1000); // wait for 1 second before retrying
+    return;
+  }
 
-const getHealthAdvice = async () => {
-  const prompt =
-    "Generate a random tarot reading and use it to tell me about my health";
-  const reply = await openai.createCompletion({
-    max_tokens: 100,
-    model: "text-curie-001",
-    prompt: prompt + " (please summarize answer within 100 words)",
-    temperature: 0.7,
-  });
+  console.log(cardNumber);
 
-  const message = reply.data.choices[0].text.trim();
-  return message;
-};
-
-const getRelationshipAdvice = async () => {
-  const prompt =
-    "Generate a random tarot reading and use it to give me relationship advice";
+  const prompt = `Generate a tarot reading and give interpretation only on my relationships right now`;
   const reply = await openai.createCompletion({
     max_tokens: 100,
     model: "text-curie-001",
@@ -462,7 +694,8 @@ const getRelationshipAdvice = async () => {
   });
 
   const message = reply.data.choices[0].text.trim();
-  return message;
+  bot.sendMessage(chatId, message);
+  tryMenu(msg.chat.id);
 };
 
 const isAdmin = (username) => {
