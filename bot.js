@@ -28,6 +28,10 @@ const menuMessage =
   "   ----------------------\n" +
   "🔢 /numberastro - We analyze & predict Numbers\n" +
   "   ----------------------\n\n" +
+  "📜 Hand Predictions Based On Palmistry\n\n" +
+  "   ----------------------\n" +
+  "🔢 /palmistry - We analyze & predict hands\n" +
+  "   ----------------------\n\n" +
   "📜 Future Predictions Based On Tarot Reading\n\n" +
   "   ----------------------\n" +
   "🎴 /tarotreading - We pick a random Tarot for you\n" +
@@ -77,6 +81,12 @@ bot.onText(/\/tarotreading/, async (msg) => {
 
 bot.onText(/\/vedicastro/, async (msg) => {
   await handleCommand(msg, generateVedicAstroReading);
+});
+
+//Hand Astro
+
+bot.onText(/\/vedicastro/, async (msg) => {
+  await handleCommand(msg, getPalmistryAdvice);
 });
 
 //Numerology
@@ -348,6 +358,53 @@ const sendBot = async (chatId, response) => {
   } catch (err) {
     console.error("Error sending response message:", err);
   }
+};
+
+//Palmistry Functions
+
+const getBase64Image = (imagePath) => {
+  return new Promise((resolve, reject) => {
+    fs.readFile(imagePath, (err, data) => {
+      if (err) reject(err);
+      else resolve(Buffer.from(data).toString("base64"));
+    });
+  });
+};
+
+const getPalmistryAdvice = async (msg) => {
+  const chatId = msg.chat.id;
+
+  const promptMessage = "Please upload a photo of your hand:";
+  bot.sendMessage(chatId, promptMessage);
+
+  const photoMsg = await new Promise((resolve) => {
+    bot.on("photo", (photoMsg) => {
+      resolve(photoMsg);
+    });
+  });
+
+  const fileId = photoMsg.photo[0].file_id;
+  const fileLink = await bot.getFileLink(fileId);
+  const compressedFile = await compressImage(fileLink);
+
+  const base64Image = await getBase64Image(compressedFile);
+
+  const prompt = "Give me basic palmistry advice using my hand image";
+  const reply = await openai.createCompletion({
+    max_tokens: 400,
+    model: "text-davinci-002",
+    prompt: prompt + " (please summarize answer within 100 words)",
+    temperature: 0.7,
+    images: [base64Image],
+    image_size: 512,
+    image_width: 512,
+    image_height: 512,
+    image_type: "image/jpeg",
+  });
+
+  const message = reply.data.choices[0].text.trim();
+  bot.sendMessage(chatId, message);
+  tryMenu(msg.chat.id);
 };
 
 // Tarot Reading Functions
