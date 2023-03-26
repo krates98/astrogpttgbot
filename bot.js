@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 require("dotenv").config();
+const fs = require("fs");
+const axios = require("axios");
 
 const TelegramBot = require("node-telegram-bot-api");
 const { Configuration, OpenAIApi } = require("openai");
@@ -30,7 +32,7 @@ const menuMessage =
   "   ----------------------\n\n" +
   "📜 Hand Predictions Based On Palmistry\n\n" +
   "   ----------------------\n" +
-  "🔢 /palmistry - We analyze & predict hands\n" +
+  "🔢 /palmistry - We analyze & predict Numbers\n" +
   "   ----------------------\n\n" +
   "📜 Future Predictions Based On Tarot Reading\n\n" +
   "   ----------------------\n" +
@@ -85,7 +87,7 @@ bot.onText(/\/vedicastro/, async (msg) => {
 
 //Hand Astro
 
-bot.onText(/\/vedicastro/, async (msg) => {
+bot.onText(/\/palmistry/, async (msg) => {
   await handleCommand(msg, getPalmistryAdvice);
 });
 
@@ -158,19 +160,19 @@ bot.on("message", async (msg) => {
     return;
   }
 
-  if (
-    msg.text.startsWith("/tarotreading") ||
-    msg.text.startsWith("/tokentarot") ||
-    msg.text.startsWith("/brokenheart") ||
-    msg.text.startsWith("/depression") ||
-    msg.text.startsWith("/cheermeup") ||
-    msg.text.startsWith("/getrich") ||
-    msg.text.startsWith("/shouldinvest") ||
-    msg.text.startsWith("/health") ||
-    msg.text.startsWith("/relationship")
-  ) {
-    userCommandCounts.set(msg.from.id, commandCount + 1);
-  }
+  // if (
+  //   msg.text.startsWith("/tarotreading") ||
+  //   msg.text.startsWith("/tokentarot") ||
+  //   msg.text.startsWith("/brokenheart") ||
+  //   msg.text.startsWith("/depression") ||
+  //   msg.text.startsWith("/cheermeup") ||
+  //   msg.text.startsWith("/getrich") ||
+  //   msg.text.startsWith("/shouldinvest") ||
+  //   msg.text.startsWith("/health") ||
+  //   msg.text.startsWith("/relationship")
+  // ) {
+  //   userCommandCounts.set(msg.from.id, commandCount + 1);
+  // }
 });
 
 const handleCommand = async (msg, commandFunction) => {
@@ -362,15 +364,6 @@ const sendBot = async (chatId, response) => {
 
 //Palmistry Functions
 
-const getBase64Image = (imagePath) => {
-  return new Promise((resolve, reject) => {
-    fs.readFile(imagePath, (err, data) => {
-      if (err) reject(err);
-      else resolve(Buffer.from(data).toString("base64"));
-    });
-  });
-};
-
 const getPalmistryAdvice = async (msg) => {
   const chatId = msg.chat.id;
 
@@ -385,26 +378,18 @@ const getPalmistryAdvice = async (msg) => {
 
   const fileId = photoMsg.photo[0].file_id;
   const fileLink = await bot.getFileLink(fileId);
-  const compressedFile = await compressImage(fileLink);
 
-  const base64Image = await getBase64Image(compressedFile);
-
-  const prompt = "Give me basic palmistry advice using my hand image";
+  const prompt = `Can you give basic info about palmistry using this hand ${fileLink}`;
   const reply = await openai.createCompletion({
-    max_tokens: 400,
+    max_tokens: 500,
     model: "text-davinci-002",
-    prompt: prompt + " (please summarize answer within 100 words)",
+    prompt: prompt,
     temperature: 0.7,
-    images: [base64Image],
-    image_size: 512,
-    image_width: 512,
-    image_height: 512,
-    image_type: "image/jpeg",
   });
 
   const message = reply.data.choices[0].text.trim();
   bot.sendMessage(chatId, message);
-  tryMenu(msg.chat.id);
+  tryMenu(chatId);
 };
 
 // Tarot Reading Functions
