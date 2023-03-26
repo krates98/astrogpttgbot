@@ -365,10 +365,6 @@ const sendBot = async (chatId, response) => {
 
 //Palmistry Functions
 
-const sizeOf = require("image-size");
-const FileType = require("file-type");
-const ImageClassifier = require("image-classifier");
-
 const classifier = new ImageClassifier();
 
 const validateImage = async (buffer) => {
