@@ -379,11 +379,22 @@ const getPalmistryAdvice = async (msg) => {
   const fileId = photoMsg.photo[0].file_id;
   const fileLink = await bot.getFileLink(fileId);
 
+  // Check if the file type is image
+  const fileType = await FileType.fromStream(request(fileLink));
+  if (!fileType || !fileType.mime.startsWith("image/")) {
+    bot.sendMessage(
+      chatId,
+      "Invalid input. Please upload a photo of your hand:"
+    );
+    getPalmistryAdvice(msg);
+    return;
+  }
+
   const prompt = `Can you give basic info about palmistry using this hand ${fileLink}`;
   const reply = await openai.createCompletion({
     max_tokens: 500,
     model: "text-davinci-002",
-    prompt: prompt,
+    prompt: prompt + " if its not a hand image revert with invalid input",
     temperature: 0.7,
   });
 
