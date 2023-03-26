@@ -1,9 +1,6 @@
 const express = require("express");
 const app = express();
 require("dotenv").config();
-const sizeOf = require("image-size");
-const mime = require("mime-types");
-const ImageClassifier = require("image-classifier");
 
 const TelegramBot = require("node-telegram-bot-api");
 const { Configuration, OpenAIApi } = require("openai");
@@ -365,66 +362,13 @@ const sendBot = async (chatId, response) => {
 
 //Palmistry Functions
 
-const classifier = new ImageClassifier();
-
-const validateImage = async (buffer) => {
-  const type = await FileType.fromBuffer(buffer);
-  if (!type || !type.mime.startsWith("image/")) {
-    throw new Error("Invalid input. Please upload a photo of your hand.");
-  }
-  const dimensions = sizeOf(buffer);
-  if (!dimensions || dimensions.width < 100 || dimensions.height < 100) {
-    throw new Error(
-      "Image is too small. Please upload a larger photo of your hand."
-    );
-  }
-};
-
-const classifyImage = async (buffer) => {
-  const result = await classifier.classify(buffer);
-  const topPrediction =
-    result && result.length > 0 && result[0].className.toLowerCase();
-  if (topPrediction !== "hand") {
-    throw new Error("Invalid input. Please upload a photo of your hand.");
-  }
-};
-
 const getPalmistryAdvice = async (msg) => {
   const chatId = msg.chat.id;
 
-  const promptMessage = "Please upload a photo of your hand:";
-  bot.sendMessage(chatId, promptMessage);
-
-  const photoMsg = await new Promise((resolve) => {
-    bot.on("photo", (photoMsg) => {
-      resolve(photoMsg);
-    });
-  });
-
-  const fileId = photoMsg.photo[0].file_id;
-  const fileLink = await bot.getFileLink(fileId);
-
-  const buffer = await fetch(fileLink).then((r) => r.buffer());
-
-  try {
-    await validateImage(buffer);
-    await classifyImage(buffer);
-  } catch (error) {
-    bot.sendMessage(chatId, error.message);
-    getPalmistryAdvice(msg);
-    return;
-  }
-
-  const prompt = `Can you give basic info about palmistry using this hand ${fileLink}`;
-  const reply = await openai.createCompletion({
-    max_tokens: 500,
-    model: "text-davinci-002",
-    prompt: prompt,
-    temperature: 0.7,
-  });
-
-  const message = reply.data.choices[0].text.trim();
-  bot.sendMessage(chatId, message);
+  bot.sendMessage(
+    chatId,
+    "Only available on web app as telegram compress images"
+  );
   tryMenu(chatId);
 };
 
